@@ -36,6 +36,22 @@
 #define GPIO_PIN15  0xF
 
 /**
+ * @brief pin mode select
+ * 
+ */
+#define GPIO_MODE_INPUT  0x00
+#define GPIO_MODE_OUTPUT 0x01
+#define GPIO_MODE_AF     0x02
+#define GPIO_MODE_ANALOG 0x03
+
+/**
+ * @brief pin output type
+ * 
+ */
+#define GPIO_TYPE_PP     0x0
+#define GPIO_TYPE_OD     0x1
+
+/**
  * @brief pin output speed
  * 
  */
