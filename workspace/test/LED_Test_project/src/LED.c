@@ -1,11 +1,10 @@
 #include "LED.h"
 #include "GPIO.h"
-#include "RCC.h"
 
 extern const LED_t LEDS [_LED_COUNT];
-
-void LED_init(void)
+LED_errorStatus_t LED_init(void)
 {
+    LED_errorStatus_t LED_errorStatus = LED_NotOk;
     GPIO_Pin_t Pin ;
     Pin.Mode = GPIO_OUT_PP;
     Pin.Speed = GPIO_SPEED_LOW;
@@ -13,25 +12,22 @@ void LED_init(void)
 
     for(i = 0; i <_LED_COUNT; i++)
     {
-        Pin.Port = LEDS[i].Port;
-        Pin.Pin =  LEDS[i].Pin;
-        if(Pin.Port == GPIO_PORTA)
+        if(LEDS[i].Connection > LED_REVERSE)
         {
-            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOA);
+            LED_errorStatus = LED_WrongConnection;
         }
-        else if(Pin.Port == GPIO_PORTB)
+        else
         {
-            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOB);
+            LED_errorStatus = LED_isOk;
+            Pin.Port = LEDS[i].Port;
+            Pin.Pin =  LEDS[i].Pin;
+            GPIO_init(&Pin);
+            GPIO_SetPinValue(LEDS[i].Port, LEDS[i].Pin, (LEDS[i].Connection ^ LEDS[i].Default_State));
         }
-        else if(Pin.Port == GPIO_PORTC)
-        {
-            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOC);
-        }
-        GPIO_init(&Pin);
-        GPIO_SetPinValue(LEDS[i].Port, LEDS[i].Pin, (LEDS[i].Connection ^ LEDS[i].Default_State));
+
     }
 
-
+    return LED_errorStatus;
 }
 
 LED_errorStatus_t LED_Set_state(uint32_t LED, uint32_t state)
@@ -55,6 +51,7 @@ LED_errorStatus_t LED_Set_state(uint32_t LED, uint32_t state)
         }
         if(flag)
         {
+            LOC_errorStatus = LED_isOk;
             GPIO_SetPinValue(LEDS[LED].Port, LEDS[LED].Pin, (LEDS[LED].Connection ^ state));
         }
         else

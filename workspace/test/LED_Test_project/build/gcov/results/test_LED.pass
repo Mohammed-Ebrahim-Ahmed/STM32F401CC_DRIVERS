@@ -1,0 +1,34 @@
+---
+:source:
+  :path: test
+  :file: test_LED.c
+:successes:
+- :test: test_LED_init
+  :line: 20
+  :message: ''
+  :unity_test_time: 0
+- :test: test_LED_init_Wrong_Connection
+  :line: 37
+  :message: ''
+  :unity_test_time: 0
+- :test: test_LED_Set_state
+  :line: 51
+  :message: ''
+  :unity_test_time: 0
+- :test: test_LED_Set_state_Wrong_Set
+  :line: 61
+  :message: ''
+  :unity_test_time: 0
+- :test: test_LED_Set_state_Wrong_LED
+  :line: 70
+  :message: ''
+  :unity_test_time: 0
+:failures: []
+:ignores: []
+:counts:
+  :total: 5
+  :passed: 5
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 0.07641330000478774

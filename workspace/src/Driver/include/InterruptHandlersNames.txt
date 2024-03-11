@@ -1,0 +1,102 @@
+  .word _estack
+  .word Reset_Handler
+  .word NMI_Handler
+  .word HardFault_Handler
+  .word	MemManage_Handler
+  .word	BusFault_Handler
+  .word	UsageFault_Handler
+  .word	0
+  .word	0
+  .word	0
+  .word	0
+  .word	SVC_Handler
+  .word	DebugMon_Handler
+  .word	0
+  .word	PendSV_Handler
+  .word	SysTick_Handler
+  .word	0                            			/* Reserved                                                                        */
+  .word	EXTI16_PVD_IRQHandler        			/* EXTI Line 16 interrupt /PVD through EXTI line detection interrupt               */
+  .word	TAMP_STAMP_IRQHandler        			/* Tamper and TimeStamp interrupts through the EXTI line                           */
+  .word	EXTI22_RTC_WKUP_IRQHandler   			/* EXTI Line 22 interrupt /RTC Wakeup interrupt through the EXTI line              */
+  .word	FLASH_IRQHandler             			/* FLASH global interrupt                                                          */
+  .word	RCC_IRQHandler               			/* RCC global interrupt                                                            */
+  .word	EXTI0_IRQHandler             			/* EXTI Line0 interrupt                                                            */
+  .word	EXTI1_IRQHandler             			/* EXTI Line1 interrupt                                                            */
+  .word	EXTI2_IRQHandler             			/* EXTI Line2 interrupt                                                            */
+  .word	EXTI3_IRQHandler             			/* EXTI Line3 interrupt                                                            */
+  .word	EXTI4_IRQHandler             			/* EXTI Line4 interrupt                                                            */
+  .word	DMA1_Stream0_IRQHandler      			/* DMA1 Stream0 global interrupt                                                   */
+  .word	DMA1_Stream1_IRQHandler      			/* DMA1 Stream1 global interrupt                                                   */
+  .word	DMA1_Stream2_IRQHandler      			/* DMA1 Stream2 global interrupt                                                   */
+  .word	DMA1_Stream3_IRQHandler      			/* DMA1 Stream3 global interrupt                                                   */
+  .word	DMA1_Stream4_IRQHandler      			/* DMA1 Stream4 global interrupt                                                   */
+  .word	DMA1_Stream5_IRQHandler      			/* DMA1 Stream5 global interrupt                                                   */
+  .word	DMA1_Stream6_IRQHandler      			/* DMA1 Stream6 global interrupt                                                   */
+  .word	ADC_IRQHandler               			/* ADC1 global interrupt                                                           */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	EXTI9_5_IRQHandler           			/* EXTI Line[9:5] interrupts                                                       */
+  .word	TIM1_BRK_TIM9_IRQHandler     			/* TIM1 Break interrupt and TIM9 global interrupt                                  */
+  .word	TIM1_UP_TIM10_IRQHandler     			/* TIM1 Update interrupt and TIM10 global interrupt                                */
+  .word	TIM1_TRG_COM_TIM11_IRQHandler			/* TIM1 Trigger and Commutation interrupts and TIM11 global interrupt              */
+  .word	TIM1_CC_IRQHandler           			/* TIM1 Capture Compare interrupt                                                  */
+  .word	TIM2_IRQHandler              			/* TIM2 global interrupt                                                           */
+  .word	TIM3_IRQHandler              			/* TIM3 global interrupt                                                           */
+  .word	TIM4_IRQHandler              			/* TIM4 global interrupt                                                           */
+  .word	I2C1_EV_IRQHandler           			/* I2C1 event interrupt                                                            */
+  .word	I2C1_ER_IRQHandler           			/* I2C1 error interrupt                                                            */
+  .word	I2C2_EV_IRQHandler           			/* I2C2 event interrupt                                                            */
+  .word	I2C2_ER_IRQHandler           			/* I2C2 error interrupt                                                            */
+  .word	SPI1_IRQHandler              			/* SPI1 global interrupt                                                           */
+  .word	SPI2_IRQHandler              			/* SPI2 global interrupt                                                           */
+  .word	USART1_IRQHandler            			/* USART1 global interrupt                                                         */
+  .word	USART2_IRQHandler            			/* USART2 global interrupt                                                         */
+  .word	0                            			/* Reserved                                                                        */
+  .word	EXTI15_10_IRQHandler         			/* EXTI Line[15:10] interrupts                                                     */
+  .word	EXTI17_RTC_Alarm_IRQHandler  			/* EXTI Line 17 interrupt / RTC Alarms (A and B) through EXTI line interrupt       */
+  .word	EXTI18_OTG_FS_WKUP_IRQHandler			/* EXTI Line 18 interrupt / USBUSB On-The-Go FS Wakeup through EXTI line interrupt */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	DMA1_Stream7_IRQHandler      			/* DMA1 Stream7 global interrupt                                                   */
+  .word	0                            			/* Reserved                                                                        */
+  .word	SDIO_IRQHandler              			/* SDIO global interrupt                                                           */
+  .word	TIM5_IRQHandler              			/* TIM5 global interrupt                                                           */
+  .word	SPI3_IRQHandler              			/* SPI3 global interrupt                                                           */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	DMA2_Stream0_IRQHandler      			/* DMA2 Stream0 global interrupt                                                   */
+  .word	DMA2_Stream1_IRQHandler      			/* DMA2 Stream1 global interrupt                                                   */
+  .word	DMA2_Stream2_IRQHandler      			/* DMA2 Stream2 global interrupt                                                   */
+  .word	DMA2_Stream3_IRQHandler      			/* DMA2 Stream3 global interrupt                                                   */
+  .word	DMA2_Stream4_IRQHandler      			/* DMA2 Stream4 global interrupt                                                   */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	OTG_FS_IRQHandler            			/* USB On The Go FS global interrupt                                               */
+  .word	DMA2_Stream5_IRQHandler      			/* DMA2 Stream5 global interrupt                                                   */
+  .word	DMA2_Stream6_IRQHandler      			/* DMA2 Stream6 global interrupt                                                   */
+  .word	DMA2_Stream7_IRQHandler      			/* DMA2 Stream7 global interrupt                                                   */
+  .word	USART6_IRQHandler            			/* USART6 global interrupt                                                         */
+  .word	I2C3_EV_IRQHandler           			/* I2C3 event interrupt                                                            */
+  .word	I2C3_ER_IRQHandler           			/* I2C3 error interrupt                                                            */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	0                            			/* Reserved                                                                        */
+  .word	SPI4_IRQHandler              			/* SPI4 global interrupt                                                           */
+  .size g_pfnVectors, .-g_pfnVectors

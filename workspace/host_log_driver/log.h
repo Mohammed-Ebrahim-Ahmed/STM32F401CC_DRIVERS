@@ -51,6 +51,7 @@ LOG_errorStatus_t LOG_writeWithParameters(uint8_t Severity_Level, uint8_t Parame
 
 LOG_errorStatus_t LOG_ClearLogFile(void);
 
+LOG_errorStatus_t LOG_ReadFile(void);
 
 
 #endif // E__ES_ITI_ARM_STM32F401CC_DRIVERS_WORKSPACE_HOST_LOG_DRIVER_LOG_H_

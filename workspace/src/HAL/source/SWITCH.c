@@ -1,5 +1,6 @@
 #include "SWITCH.h"
 #include "GPIO.h"
+#include "RCC.h"
 
 extern SWITCH_t SWITCHS [_SWITCH_NO];
 #define Toggle_Invert_Mode_MASK 0x03
@@ -13,6 +14,18 @@ void SWITCH_init(void)
         Pin.Port = SWITCHS[LOC_Counter].Port;
         Pin.Pin  = SWITCHS[LOC_Counter].Pin;
         Pin.Mode = (SWITCHS[LOC_Counter].Mode ^ Toggle_Invert_Mode_MASK);
+        if(Pin.Port == GPIO_PORTA)
+        {
+            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOA);
+        }
+        else if(Pin.Port == GPIO_PORTB)
+        {
+            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOB);
+        }
+        else if(Pin.Port == GPIO_PORTC)
+        {
+            RCC_enableAHBPeriCLK(RCC_AHB1_GPIOC);
+        }
         GPIO_init(&Pin);
     }
 }

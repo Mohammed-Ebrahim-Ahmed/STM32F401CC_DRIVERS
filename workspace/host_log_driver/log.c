@@ -28,6 +28,7 @@
 static uint8_t channel_output = -1;
 static uint8_t severity_level = -1;
 static uint8_t * Severity_level_arr [4] = {"Critical","Error","Warning","Info"}; 
+static uint8_t * colors [4] = {"1;33","1;31","1;34","1;32"};
 static FILE *fptr = NULL;
 static uint8_t * filePath = NULL;
 /********************************************************************************************************/
@@ -115,10 +116,10 @@ LOG_errorStatus_t LOG_write(uint8_t Severity_Level, uint8_t* Text)
         switch(channel_output)
         {
             case LOG_OUT_FILE:
-                fprintf(fptr,"[%02d:%02d:%02d]:[%s]: %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[severity_level],Text);
+                fprintf(fptr,"[%02d:%02d:%02d]:[%s]: %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[Severity_Level],Text);
                 break;
             case LOG_OUT_CONSOLE:
-                printf("[%02d:%02d:%02d]:[%s]: %s\n",tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[severity_level],Text);
+                printf("[%02d:%02d:%02d]:\033[0m\033[%s][%s]\033[0m: %s\n",tm->tm_hour, tm->tm_min, tm->tm_sec,colors[Severity_Level],Severity_level_arr[Severity_Level],Text);
                 break;
             default:
                 break;
@@ -174,12 +175,12 @@ LOG_errorStatus_t LOG_writeWithParameters(uint8_t Severity_Level, uint8_t Parame
         {
             case LOG_OUT_FILE:
                 for (i = 0; i < ParametersNo; i++)                  
-                    fprintf(fptr,"[%02d:%02d:%02d]:[%s]: %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[severity_level],va_arg(ptr, uint8_t*));
+                    fprintf(fptr,"[%02d:%02d:%02d]:[%s]: %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[Severity_Level],va_arg(ptr, uint8_t*));
                 va_end(ptr);
                 break;
             case LOG_OUT_CONSOLE:
                 for (i = 0; i < ParametersNo; i++)
-                    printf("[%02d:%02d:%02d]:[%s]: %s\n",tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[severity_level],va_arg(ptr, uint8_t*));
+                    printf("[%02d:%02d:%02d]:[%s]: %s\n",tm->tm_hour, tm->tm_min, tm->tm_sec,Severity_level_arr[Severity_Level],va_arg(ptr, uint8_t*));
                 va_end(ptr);
                 break;
             default:
@@ -214,4 +215,46 @@ LOG_errorStatus_t LOG_ClearLogFile(void)
         fclose(fptr);
     }
     return LOG_errorStatus;
+}
+
+LOG_errorStatus_t LOG_ReadFile(void)
+{
+    LOG_errorStatus_t LOG_errorStatus = LOG_NotOk;
+    if(fptr == NULL)
+    {
+        LOG_errorStatus = LOG_NULLPTR;
+    }
+    else
+    {
+        LOG_errorStatus = LOG_isOk;
+
+        FILE *rptr;
+
+        // Open a file in read mode
+        rptr = fopen(filePath, "r");
+
+        // Store the content of the file
+        char myString[1000];
+
+        // If the file exist
+        if(rptr != NULL) 
+        {
+        while(fgets(myString, 1000, rptr)) 
+        {
+            //printf("%s", myString);
+
+            if(strstr(myString, Severity_level_arr[severity_level]) != NULL)
+            {
+                printf("%s", myString);
+            }
+
+        }
+        } 
+        else 
+        {
+            printf("Not able to open the file.");
+        }
+
+    }
+    return LOG_errorStatus;    
 }
