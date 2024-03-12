@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include "SWITCH_CFG.h"
+
+#define SWITCH_PRESSED    1
+#define SWITCH_NOTPRESSED 0
 /**
  * @brief this is the connection type of the switch
  * 
