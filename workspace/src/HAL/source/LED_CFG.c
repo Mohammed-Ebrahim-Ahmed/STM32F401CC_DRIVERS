@@ -8,10 +8,16 @@ const LED_t LEDS [_LED_COUNT] = {
         .Connection = LED_FORWARD,
         .Default_State = LED_SET_LOW
     },
-    [blueLed] ={
+    [yellowLed] ={
         .Port = GPIO_PORTB,
         .Pin = GPIO_PIN0,
-        .Connection = LED_REVERSE,
-        .Default_State = LED_SET_HIGH
-    }
+        .Connection = LED_FORWARD,
+        .Default_State = LED_SET_LOW
+    },
+    [redLed] ={
+        .Port = GPIO_PORTB,
+        .Pin = GPIO_PIN1,
+        .Connection = LED_FORWARD,
+        .Default_State = LED_SET_LOW
+    },
 };

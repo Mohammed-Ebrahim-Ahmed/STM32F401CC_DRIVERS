@@ -4,7 +4,8 @@
 typedef enum
 {
     greenLed,
-    blueLed,
+    yellowLed,
+    redLed,
     _LED_COUNT /*Do not change this value*/
 }LED_count_t;
 
