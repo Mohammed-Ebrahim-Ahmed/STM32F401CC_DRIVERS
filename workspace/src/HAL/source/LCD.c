@@ -1,7 +1,7 @@
 /********************************************************************************************************/
 /************************************************Includes************************************************/
 /********************************************************************************************************/
-#include "LCD.h"
+#include "LCD_HAL.h"
 #include "GPIO.h"
 #include "RCC.h"
 
@@ -25,12 +25,21 @@
 #define REQ_STATE_BUSY  0
 #define REQ_STATE_READY 1
 
-#define LCD_INIT_STATE_POWER_ON       0
-#define LCD_INIT_STATE_FUNCTIONAL_SET 1
-#define LCD_INIT_STATE_DISPLAY        2
-#define LCD_INIT_STATE_CLEAR          3
-#define LCD_INIT_STATE_ENTRY          4
-#define LCD_INIT_STATE_END            5
+#define LCD_INIT_STATE_POWER_ON                         0
+#define LCD_INIT_STATE_FUNCTIONAL_SET_1                 1
+#define LCD_INIT_STATE_FUNCTIONAL_SET_2                 2
+#define LCD_INIT_STATE_FUNCTIONAL_SET_3                 3
+#define LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_1         4
+#define LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_2         5
+#define LCD_INIT_STATE_DISPLAY_CLEAR_1                  6
+#define LCD_INIT_STATE_DISPLAY_CLEAR_2                  7
+#define LCD_INIT_STATE_ENTRY_MODE_SET_1                 8
+#define LCD_INIT_STATE_ENTRY_MODE_SET_2                 9
+#define LCD_INIT_STATE_END                              10
+
+#define LCD_SendMOSTSIG                                 0
+#define LCD_SENDLEASTSIG                                1
+#define LCD_SENDENLOW                                   2
 
 #define LCD_INPUT_COMMAND  GPIO_SET_PIN_LOW
 #define LCD_INPUT_DATA     GPIO_SET_PIN_HIGH
@@ -111,18 +120,28 @@
     #error "Wrong LCD mode selection"
 
 #endif
+
+
+
+
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
+
+
 typedef struct{
-    const char* s;
-    uint8_t len;
-    uint8_t state;
-    uint8_t type;
-    uint8_t xpos;
-    uint8_t ypos;
+    uint8_t* s;
+    volatile uint8_t len;
+    volatile uint8_t state;
+    volatile uint8_t type;
+    volatile uint8_t xpos;
+    volatile uint8_t ypos;
 }User_Req_t;
 
+typedef struct{
+    uint8_t cursorPos;
+    CB_t CB; 
+}write_t;
 
 
 /********************************************************************************************************/
@@ -137,8 +156,12 @@ volatile static User_Req_t User_Req ={
     .xpos = 0,
     .ypos = 0
 };
+volatile static write_t write_process = {
+    .cursorPos = 0,
+    .CB= NULL
+};
 extern const LCD_Pins_t LCD_Connection;
-
+volatile static uint8_t LCD_INPUT_FINISHED = 0;
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
@@ -147,9 +170,12 @@ static void LCD_clearProc(void);
 static void LCD_setPosProc(void);
 static void LCD_GPIO_init(void);
 static void LCD_writeInitCommand (uint8_t command);
-static void LCD_writeCommand(uint8_t command);
-static void LCD_writeData(uint8_t data);
-static void LCD_write(uint8_t type, uint8_t input);
+static void LCD_ActionEnableHighMostSig(uint8_t input, uint8_t type);
+static void LCD_ActionEnableHighLeastSig(uint8_t input);
+static void LCD_ActionEnableLow (void);
+// static void LCD_writeCommand(uint8_t command);
+// static void LCD_writeData(uint8_t data);
+// static void LCD_write(uint8_t type, uint8_t input);
 /********************************************************************************************************/
 /*********************************************APIs Implementation****************************************/
 /********************************************************************************************************/
@@ -191,7 +217,7 @@ void LCD_TASK(void)
     }
 }
 
-LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos)
+LCD_errorStatus_t LCD_writeString(const uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
 
@@ -211,6 +237,10 @@ LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos,
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
+    else if(CB == NULL)
+    {
+        LCD_errorStatus = LCD_NullPtr;        
+    }
     else
     {
         LCD_errorStatus = LCD_Ok;
@@ -223,6 +253,9 @@ LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos,
             User_Req.type = REQ_TYPE_WRITE;
             User_Req.xpos = xpos;
             User_Req.ypos = ypos;
+            write_process.CB = CB;
+            write_process.cursorPos = 0;
+            
         }
     }
 
@@ -245,16 +278,28 @@ LCD_errorStatus_t LCD_getState(uint8_t* LCD_state)
     return LCD_errorStatus;
 }
 
-void LCD_clearScreen(void)
+LCD_errorStatus_t LCD_clearScreen(CB_t CB)
 {
-    if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req.state == REQ_STATE_READY)
+    LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
+    
+    if(CB == NULL)
     {
-        User_Req.state = REQ_STATE_BUSY;
-        User_Req.type = REQ_TYPE_CLEAR;
+        LCD_errorStatus = LCD_NullPtr;
     }
+    else
+    {
+        LCD_errorStatus = LCD_Ok;
+        if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req.state == REQ_STATE_READY)
+        {
+            User_Req.state = REQ_STATE_BUSY;
+            User_Req.type = REQ_TYPE_CLEAR;
+            write_process.CB = CB;
+        }
+    }
+    return LCD_errorStatus;
 }
 
-LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos)
+LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
 
@@ -266,6 +311,10 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos)
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
+    else if(CB == NULL)
+    {
+        LCD_errorStatus = LCD_NullPtr;
+    }
     else
     {
         LCD_errorStatus = LCD_Ok;
@@ -275,6 +324,8 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos)
             User_Req.xpos = xpos;
             User_Req.ypos = ypos;
             User_Req.type = REQ_TYPE_SET_POS;
+            write_process.cursorPos = 0;
+            write_process.CB = CB;
         }
     }
     return LCD_errorStatus;
@@ -284,75 +335,91 @@ void LCD_init(void)
 {
     static uint8_t LCD_init_state = LCD_INIT_STATE_POWER_ON;
     static uint8_t time = 0;
+    time++;
     switch (LCD_init_state)
     {
         
     case LCD_INIT_STATE_POWER_ON:
         LCD_GPIO_init();
-        LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET;
-        break;
-
-    case LCD_INIT_STATE_FUNCTIONAL_SET:
         if(time == 50)
         {
-            LCD_writeInitCommand(FUNCTION_SET_1);
+            LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET_1;
         }
-        else if(time == 51)
-        {
-            LCD_writeInitCommand(FUNCTION_SET_2);
-        }
-        else if(time == 52)
-        {
-            LCD_writeInitCommand(FUNCTION_SET_3);
-            
-        }
-        LCD_init_state = LCD_INIT_STATE_DISPLAY;
-        break;    
+        break;
 
-    case LCD_INIT_STATE_DISPLAY:
+    case LCD_INIT_STATE_FUNCTIONAL_SET_1:
+        LCD_writeInitCommand(FUNCTION_SET_1);
         if(time == 53)
         {
-            LCD_writeInitCommand(DISPLAY_ON_OFF_CONTROL_1);
+            LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET_2;
         }
-        else if(time == 54)
-        {
-            LCD_writeInitCommand(DISPLAY_ON_OFF_CONTROL_2);
-        }
-        LCD_init_state = LCD_INIT_STATE_CLEAR;
         break;
-
-    case LCD_INIT_STATE_CLEAR:
-        if(time == 55)
+    case LCD_INIT_STATE_FUNCTIONAL_SET_2:
+        LCD_writeInitCommand(FUNCTION_SET_2);
+        if(time == 56)
         {
-            LCD_writeInitCommand(DISPLAY_CLEAR_1);
+            LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET_3;
         }
-        else if(time == 57)
-        {
-            LCD_writeInitCommand(DISPLAY_CLEAR_2);
-        }
-        LCD_init_state = LCD_INIT_STATE_ENTRY;
         break;
-
-    case LCD_INIT_STATE_ENTRY:
+    case LCD_INIT_STATE_FUNCTIONAL_SET_3:
+        LCD_writeInitCommand(FUNCTION_SET_3);
         if(time == 59)
         {
-            LCD_writeInitCommand(ENTRY_MODE_SET_1);
+            LCD_init_state = LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_1;
         }
-        else if(time == 60)
-        {
-            LCD_writeInitCommand(ENTRY_MODE_SET_2);
-        }
-        LCD_init_state = LCD_INIT_STATE_END;
-        break;
+        break; 
 
+    case LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_1:
+        LCD_writeInitCommand(DISPLAY_ON_OFF_CONTROL_1);
+        if(time == 62)
+        {
+            LCD_init_state =LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_2;
+        }
+        break;
+    case LCD_INIT_STATE_DISPLAY_ON_OFF_CONTROL_2:
+        LCD_writeInitCommand(DISPLAY_ON_OFF_CONTROL_2);
+        if(time == 65)
+        {
+            LCD_init_state =LCD_INIT_STATE_DISPLAY_CLEAR_1;
+        }
+        break;
+    case LCD_INIT_STATE_DISPLAY_CLEAR_1:
+        LCD_writeInitCommand(DISPLAY_CLEAR_1);
+        if(time == 68)
+        {
+            LCD_init_state =LCD_INIT_STATE_DISPLAY_CLEAR_2;
+        }
+        break;
+    case LCD_INIT_STATE_DISPLAY_CLEAR_2:
+        LCD_writeInitCommand(DISPLAY_CLEAR_2);
+        if(time == 71)
+        {
+            LCD_init_state =LCD_INIT_STATE_ENTRY_MODE_SET_1;
+        }
+        break;
+    case LCD_INIT_STATE_ENTRY_MODE_SET_1:
+        LCD_writeInitCommand(ENTRY_MODE_SET_1);
+        if(time == 74)
+        {
+            LCD_init_state =LCD_INIT_STATE_ENTRY_MODE_SET_2;
+        }
+        break;
+    case LCD_INIT_STATE_ENTRY_MODE_SET_2:
+        LCD_writeInitCommand(ENTRY_MODE_SET_2);
+        if(time == 77)
+        {
+            LCD_init_state = LCD_INIT_STATE_END;;
+        }
+        break;
     case LCD_INIT_STATE_END:
         GLOBAL_LCD_STATE = OPERATION_STATE;
+        time = 0;
         break;
 
     default:
         break;
     }
-    time++;
+    
 }
 
 void LCD_GPIO_init(void)
@@ -399,10 +466,14 @@ void LCD_writeInitCommand(uint8_t command)
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (command>>7) & 1));
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);                   
         }
-        counter++;
-        if(counter > 2)
+        if(counter == 2)
         {
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
+        }
+        counter++;
+        
+        if(counter == 3)
+        {
             counter = 0;
         }
         
@@ -477,36 +548,277 @@ void LCD_writeInitCommand(uint8_t command)
 //     }        
 // }
 
-static void LCD_write(uint8_t type, uint8_t input)
-{
-    static uint8_t counter = 0;
+// void LCD_write(uint8_t type, uint8_t input)
+// {
+//     static uint8_t counter = 0;
 
+//     if(LCD_MODE == FOUR_BIT_MODE)
+//     {
+//         if(counter == 0)
+//         {
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RS], LCD_Connection.LCD_DataPin[RS], type);
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RW], LCD_Connection.LCD_DataPin[RW], GPIO_SET_PIN_LOW);
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[3], LCD_Connection.LCD_DataPin[3], ( (input>>4) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[4], LCD_Connection.LCD_DataPin[4], ( (input>>5) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[5], LCD_Connection.LCD_DataPin[5], ( (input>>6) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (input>>7) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);       
+//         }
+//         else if(counter == 2)
+//         {
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[3], LCD_Connection.LCD_DataPin[3], ( (input>>0) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[4], LCD_Connection.LCD_DataPin[4], ( (input>>1) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[5], LCD_Connection.LCD_DataPin[5], ( (input>>2) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (input>>3) & 1));
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);
+//         }
+//         if(counter == 4)
+//         {
+//             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
+//             LCD_INPUT_FINISHED = 1;
+//             counter = 0;
+//         }
+        
+//         counter++;
+
+//         if(counter == 5)
+//         {
+//             counter = 0;
+//         }
+        
+//     }           
+// }
+
+
+void LCD_ActionEnableHighMostSig(uint8_t input, uint8_t type)
+{
     if(LCD_MODE == FOUR_BIT_MODE)
     {
-        if(counter == 0)
-        {
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RS], LCD_Connection.LCD_DataPin[RS], type);
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RW], LCD_Connection.LCD_DataPin[RW], GPIO_SET_PIN_LOW);
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[3], LCD_Connection.LCD_DataPin[3], ( (input>>4) & 1));
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[4], LCD_Connection.LCD_DataPin[4], ( (input>>5) & 1));
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[5], LCD_Connection.LCD_DataPin[5], ( (input>>6) & 1));
             GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (input>>7) & 1));
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);       
-        }
-        else if(counter == 2)
+            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);   
+    }    
+}
+
+void LCD_ActionEnableHighLeastSig(uint8_t input)
+{
+    if(LCD_MODE == FOUR_BIT_MODE)
+    {
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[3], LCD_Connection.LCD_DataPin[3], ( (input>>0) & 1));
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[4], LCD_Connection.LCD_DataPin[4], ( (input>>1) & 1));
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[5], LCD_Connection.LCD_DataPin[5], ( (input>>2) & 1));
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (input>>3) & 1));
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);
+    }    
+}
+
+void LCD_ActionEnableLow(void)
+{
+    if(LCD_MODE == FOUR_BIT_MODE)
+    {
+        GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW); 
+    }    
+}
+
+
+void LCD_writeProc(void)
+{
+    // static uint8_t counter = 0;
+    // if(LCD_INPUT_FINISHED == 1)
+    // {
+    //     counter++;
+    //     LCD_INPUT_FINISHED = 0;
+    // }
+    // if(counter < User_Req.len)
+    // {
+    //     LCD_write(LCD_INPUT_DATA, User_Req.s[counter]);
+    // }
+    // else if(counter == User_Req.len)
+    // {
+    //     counter = 0;
+    //     User_Req.state = REQ_STATE_READY;
+    //     if(write_process.CB)
+    //     {
+    //         write_process.CB();
+    //     }
+    // }
+    static uint8_t LCD_sendingState = LCD_SendMOSTSIG;
+    static uint8_t timer = 0;
+    if(timer == 0)
+    {
+        LCD_setPosProc();
+    }
+    
+    if(write_process.cursorPos < User_Req.len) 
+    {
+        timer++; 
+        switch(LCD_sendingState)
         {
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[3], LCD_Connection.LCD_DataPin[3], ( (input>>0) & 1));
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[4], LCD_Connection.LCD_DataPin[4], ( (input>>1) & 1));
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[5], LCD_Connection.LCD_DataPin[5], ( (input>>2) & 1));
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[6], LCD_Connection.LCD_DataPin[6], ( (input>>3) & 1));
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);
+            case LCD_SendMOSTSIG:
+                LCD_ActionEnableHighMostSig(LCD_INPUT_COMMAND, User_Req.s[write_process.cursorPos]);
+                if(timer == 2)
+                {
+                    LCD_sendingState = LCD_SENDLEASTSIG;
+                }
+                break;
+            case LCD_SENDLEASTSIG:
+                LCD_ActionEnableHighLeastSig(User_Req.s[write_process.cursorPos]);
+                if(timer == 4)
+                {
+                    LCD_sendingState = LCD_SENDENLOW;
+                }
+                break;
+            case LCD_SENDENLOW:
+                LCD_ActionEnableLow();
+                if(timer == 6)
+                {
+                    LCD_sendingState = LCD_SendMOSTSIG;
+                    write_process.cursorPos++;
+                    timer = 0;
+                }
+                break;
+            default:
+                break;
+                
         }
-        else if(counter == 4)
+    }
+    if(write_process.cursorPos == User_Req.len)
+    {
+        User_Req.state = REQ_STATE_READY;
+        if(write_process.CB)
         {
-            GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
+            write_process.CB();
         }
-        counter++;       
-        
-    }           
+    }
+}
+    
+
+void LCD_clearProc(void)
+{
+    static uint8_t LCD_clearState = LCD_INIT_STATE_DISPLAY_CLEAR_1;
+    static uint8_t time = 0;
+    time++;
+    // static counter = 0;
+    // counter++;
+    // if(counter < 5)
+    // {
+    //     LCD_write(LCD_INPUT_COMMAND, DISPLAY_CLEAR_1);
+    // }
+    // else if(counter < 9)
+    // {
+    //     LCD_write(LCD_INPUT_COMMAND, DISPLAY_CLEAR_2);
+    // }
+    // else if(counter < 13)
+    // {
+    //     LCD_write(LCD_INPUT_COMMAND, ENTRY_MODE_SET_1);
+    // }
+    // else if(counter < 17)
+    // {
+    //     LCD_write(LCD_INPUT_COMMAND, ENTRY_MODE_SET_2);
+    // }
+    // else
+    // {
+    //     User_Req.state = REQ_STATE_READY;
+    //     counter = 0;
+    //     if(write_process.CB)
+    //     {
+    //         write_process.CB();
+    //     }
+    // }
+    switch(LCD_clearState)
+    {
+    case LCD_INIT_STATE_DISPLAY_CLEAR_1:
+        LCD_writeInitCommand(DISPLAY_CLEAR_1);
+        if(time == 2)
+        {
+            LCD_clearState =LCD_INIT_STATE_DISPLAY_CLEAR_2;
+        }
+        break;
+    case LCD_INIT_STATE_DISPLAY_CLEAR_2:
+        LCD_writeInitCommand(DISPLAY_CLEAR_2);
+        if(time == 4)
+        {
+            LCD_clearState =LCD_INIT_STATE_ENTRY_MODE_SET_1;
+        }
+        break;
+    case LCD_INIT_STATE_ENTRY_MODE_SET_1:
+        LCD_writeInitCommand(ENTRY_MODE_SET_1);
+        if(time == 6)
+        {
+            LCD_clearState =LCD_INIT_STATE_ENTRY_MODE_SET_2;
+        }
+        break;
+    case LCD_INIT_STATE_ENTRY_MODE_SET_2:
+        LCD_writeInitCommand(ENTRY_MODE_SET_2);
+        if(time == 8)
+        {
+            LCD_clearState = LCD_INIT_STATE_END;;
+        }
+        break;
+    case LCD_INIT_STATE_END:
+        time = 0;
+        LCD_clearState =LCD_INIT_STATE_DISPLAY_CLEAR_1;
+        User_Req.state = REQ_STATE_READY;
+        if(write_process.CB)
+        {
+            write_process.CB();
+        }
+        break;
+    }
+
+}
+
+void LCD_setPosProc(void)
+{
+    uint32_t LOC_var = 0;
+    static uint8_t timer = 0;
+    timer++;
+    static uint8_t LCD_setPosState = LCD_SendMOSTSIG;
+    if(User_Req.xpos == 0)
+    {
+        LOC_var = User_Req.ypos;
+    }
+    else if(User_Req.ypos == 1)
+    {
+        LOC_var = User_Req.ypos + 0x40 ;
+    }
+    switch(LCD_setPosState)
+    {
+        case LCD_SendMOSTSIG:
+            LCD_ActionEnableHighMostSig(LCD_INPUT_COMMAND, LOC_var);
+            if(timer == 2)
+            {
+                LCD_setPosState = LCD_SENDLEASTSIG;
+            }
+            break;
+        case LCD_SENDLEASTSIG:
+            LCD_ActionEnableHighLeastSig(LOC_var);
+            if(timer == 4)
+            {
+                LCD_setPosState = LCD_SENDENLOW;
+            }
+            break;
+        case LCD_SENDENLOW:
+            LCD_ActionEnableLow();
+            if(timer == 6)
+            {
+                LCD_setPosState = LCD_SendMOSTSIG;
+                timer = 0;
+                User_Req.state = REQ_STATE_READY;
+                if(write_process.CB)
+                {
+                    write_process.CB();
+                }
+            }
+            break;
+        default:
+            break;
+            
+    }
 }

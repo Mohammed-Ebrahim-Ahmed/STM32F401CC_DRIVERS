@@ -1,5 +1,7 @@
-#include "LCD.h"
+#include "LCD_HAL.h"
 #include "GPIO.h"
+
+
 
 /*please select pins like this in FOUR_BIT MODE
     pin0 --> RS

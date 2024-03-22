@@ -4,4 +4,7 @@
 // please choose FOUR_BIT_MODE or EIGHT_BIT_MODE 
 #define LCD_MODE FOUR_BIT_MODE
 
+#define LCD_XDIMSION 2
+#define LCD_YDIMSION 16 
+
 #endif // HAL_INCLUDE_LCD_CFG_H_

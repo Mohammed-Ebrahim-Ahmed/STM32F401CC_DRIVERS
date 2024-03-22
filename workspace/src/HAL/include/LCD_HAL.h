@@ -34,14 +34,15 @@ typedef struct
     uint32_t LCD_DataPin [LCD_MODE];
 } LCD_Pins_t;
 
-
+typedef void (*CB_t) (void);
 /********************************************************************************************************/
 /************************************************APIs****************************************************/
 /********************************************************************************************************/
 void LCD_init(void);
-void LCD_clearScreen(void);
+LCD_errorStatus_t LCD_clearScreen(CB_t CB);
 LCD_errorStatus_t LCD_getState(uint8_t* LCD_state);
-LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos);
+LCD_errorStatus_t LCD_writeString(const uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB);
 void LCD_Task(void);
-LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos);
+LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB);
+
 #endif // HAL_INCLUDE_LCD_H_
