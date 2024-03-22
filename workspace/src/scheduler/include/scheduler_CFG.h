@@ -9,6 +9,7 @@ typedef enum{
     _RUNNABLE_NO
 }Runnable_item_t;
 
+#define TICKTIME 1
 
 
 #endif // SCHEDULER_INCLUDE_SCHEDULER_CFG_H_

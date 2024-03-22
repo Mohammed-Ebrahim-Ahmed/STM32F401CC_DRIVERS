@@ -1,0 +1,7 @@
+#ifndef HAL_INCLUDE_LCD_CFG_H_
+#define HAL_INCLUDE_LCD_CFG_H_
+
+// please choose FOUR_BIT_MODE or EIGHT_BIT_MODE 
+#define LCD_MODE FOUR_BIT_MODE
+
+#endif // HAL_INCLUDE_LCD_CFG_H_

@@ -65,3 +65,4 @@ LED_errorStatus_t LED_Set_state(uint32_t LED, uint32_t state)
     }
     return LOC_errorStatus;
 }
+

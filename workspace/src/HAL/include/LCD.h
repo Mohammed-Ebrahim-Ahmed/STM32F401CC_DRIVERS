@@ -1,44 +1,47 @@
-#ifndef SCHEDULER_INCLUDE_SCHEDULER_H_
-#define SCHEDULER_INCLUDE_SCHEDULER_H_
-
-
+#ifndef HAL_INCLUDE_LCD_H_
+#define HAL_INCLUDE_LCD_H_
 /********************************************************************************************************/
 /************************************************Includes************************************************/
 /********************************************************************************************************/
-#include <stdint.h>
-#include "scheduler_CFG.h"
+#include "stdint.h"
+#include "LCD_CFG.h"
 /********************************************************************************************************/
 /************************************************Defines*************************************************/
 /********************************************************************************************************/
+#define FOUR_BIT_MODE 7
+#define EIGHT_BIT_MODE 11
 
-
-
+#define INIT_STATE 0
+#define OPERATION_STATE 1
+#define IDEL_STATE 2
 
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
-
-typedef void (*Runnable)(void);
-
-typedef struct{
-    char* Name;
-    uint32_t Priority;
-    uint32_t Periodicity;
-    Runnable CB;
-    uint32_t First_Delay;
-}Runnable_USER_t;
-
 typedef enum{
-    SCH_isOk,
-    SCH_isNotOk,
-    SCH_NULLPTR
-}SCH_errorStatus_t;
+    LCD_NullPtr,
+    LCD_WrongLength,
+    LCD_WrongXpos,
+    LCD_WrongYpos,
+    LCD_Ok,
+    LCD_NotOk
+}LCD_errorStatus_t;
+
+typedef struct
+{
+
+    volatile void* LCD_DataPort [LCD_MODE];
+    uint32_t LCD_DataPin [LCD_MODE];
+} LCD_Pins_t;
+
 
 /********************************************************************************************************/
 /************************************************APIs****************************************************/
 /********************************************************************************************************/
-
-void SCH_init(void);
-void SCH_Start(void);
-
-#endif // SCHEDULER_INCLUDE_SCHEDULER_H_
+void LCD_init(void);
+void LCD_clearScreen(void);
+LCD_errorStatus_t LCD_getState(uint8_t* LCD_state);
+LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos);
+void LCD_Task(void);
+LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos);
+#endif // HAL_INCLUDE_LCD_H_
