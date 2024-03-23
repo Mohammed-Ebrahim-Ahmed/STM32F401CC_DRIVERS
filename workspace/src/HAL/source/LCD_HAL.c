@@ -202,6 +202,8 @@ void LCD_TASK(void)
                 case REQ_TYPE_SET_POS:
                     LCD_setPosProc();
                     break;
+                case REQ_TYPE_NOREQ:
+                    break;
                 default:
                     break;
             }
@@ -690,6 +692,7 @@ void LCD_writeProc(void)
     }
     if(write_process.cursorPos == User_Req.len)
     {
+        User_Req.type = REQ_TYPE_NOREQ;
         User_Req.state = REQ_STATE_READY;
         if(write_process.CB)
         {
@@ -764,6 +767,7 @@ void LCD_clearProc(void)
     case LCD_INIT_STATE_END:
         time = 0;
         LCD_clearState =LCD_INIT_STATE_DISPLAY_CLEAR_1;
+        User_Req.type = REQ_TYPE_NOREQ;
         User_Req.state = REQ_STATE_READY;
         if(write_process.CB)
         {
@@ -811,6 +815,7 @@ void LCD_setPosProc(void)
                 LCD_setPosState = LCD_SendMOSTSIG;
                 timer = 0;
                 User_Req.state = REQ_STATE_READY;
+                User_Req.type = REQ_TYPE_NOREQ;
                 if(write_process.CB)
                 {
                     write_process.CB();
