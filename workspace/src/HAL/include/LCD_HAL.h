@@ -41,7 +41,7 @@ typedef void (*CB_t) (void);
 void LCD_init(void);
 LCD_errorStatus_t LCD_clearScreen(CB_t CB);
 LCD_errorStatus_t LCD_getState(uint8_t* LCD_state);
-LCD_errorStatus_t LCD_writeString(const uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB);
+LCD_errorStatus_t LCD_writeString(uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB);
 void LCD_Task(void);
 LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB);
 

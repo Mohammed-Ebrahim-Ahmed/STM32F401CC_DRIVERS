@@ -162,6 +162,7 @@ volatile static write_t write_process = {
 };
 extern const LCD_Pins_t LCD_Connection;
 volatile static uint8_t LCD_INPUT_FINISHED = 0;
+static volatile uint8_t Pos_Flag = 2;
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
@@ -219,7 +220,7 @@ void LCD_TASK(void)
     }
 }
 
-LCD_errorStatus_t LCD_writeString(const uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB)
+LCD_errorStatus_t LCD_writeString( uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
 
@@ -231,11 +232,11 @@ LCD_errorStatus_t LCD_writeString(const uint8_t* string, uint8_t length, uint8_t
     {
         LCD_errorStatus = LCD_WrongLength;
     }
-    else if(xpos <= 0)
+    else if(xpos < 0)
     {
         LCD_errorStatus = LCD_WrongXpos;
     }
-    else if(ypos <= 0)
+    else if(ypos < 0)
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
@@ -338,11 +339,16 @@ void LCD_init(void)
     static uint8_t LCD_init_state = LCD_INIT_STATE_POWER_ON;
     static uint8_t time = 0;
     time++;
+    static uint8_t init_flag = 0;
     switch (LCD_init_state)
     {
         
     case LCD_INIT_STATE_POWER_ON:
-        LCD_GPIO_init();
+        if(init_flag == 0)
+        {
+            LCD_GPIO_init();
+            init_flag = 1;
+        }       
         if(time == 50)
         {
             LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET_1;
@@ -393,22 +399,25 @@ void LCD_init(void)
         }
         break;
     case LCD_INIT_STATE_DISPLAY_CLEAR_2:
-        LCD_writeInitCommand(DISPLAY_CLEAR_2);
-        if(time == 71)
+        if (time <= 71)
+        {
+            LCD_writeInitCommand(DISPLAY_CLEAR_2);
+        }  
+        if(time == 72)
         {
             LCD_init_state =LCD_INIT_STATE_ENTRY_MODE_SET_1;
         }
         break;
     case LCD_INIT_STATE_ENTRY_MODE_SET_1:
         LCD_writeInitCommand(ENTRY_MODE_SET_1);
-        if(time == 74)
+        if(time == 75)
         {
             LCD_init_state =LCD_INIT_STATE_ENTRY_MODE_SET_2;
         }
         break;
     case LCD_INIT_STATE_ENTRY_MODE_SET_2:
         LCD_writeInitCommand(ENTRY_MODE_SET_2);
-        if(time == 77)
+        if(time == 78)
         {
             LCD_init_state = LCD_INIT_STATE_END;;
         }
@@ -593,7 +602,7 @@ void LCD_writeInitCommand(uint8_t command)
 // }
 
 
-void LCD_ActionEnableHighMostSig(uint8_t input, uint8_t type)
+void LCD_ActionEnableHighMostSig(volatile uint8_t input, uint8_t type)
 {
     if(LCD_MODE == FOUR_BIT_MODE)
     {
@@ -652,52 +661,66 @@ void LCD_writeProc(void)
     // }
     static uint8_t LCD_sendingState = LCD_SendMOSTSIG;
     static uint8_t timer = 0;
-    if(timer == 0)
+
+    if (Pos_Flag == 0)
+    {
+        if(write_process.cursorPos < User_Req.len) 
+        {
+            timer++; 
+            switch(LCD_sendingState)
+            {
+                case LCD_SendMOSTSIG:
+                    if(timer == 1)
+                    {
+                        LCD_ActionEnableHighMostSig(User_Req.s[write_process.cursorPos], LCD_INPUT_DATA);
+                    }   
+                    if(timer == 2)
+                    {
+                        LCD_sendingState = LCD_SENDLEASTSIG;
+                    }
+                    break;
+                case LCD_SENDLEASTSIG:
+                    if(timer == 3)
+                    {
+                        LCD_ActionEnableHighLeastSig(User_Req.s[write_process.cursorPos]);
+                    }
+                    
+                    if(timer == 4)
+                    {
+                        LCD_sendingState = LCD_SENDENLOW;
+                    }
+                    break;
+                case LCD_SENDENLOW:
+                    if(timer == 5)
+                    {
+                        LCD_ActionEnableLow();
+                    }
+                    if(timer == 6)
+                    {
+                        LCD_sendingState = LCD_SendMOSTSIG;
+                        write_process.cursorPos++;
+                        timer = 0;
+                    }
+                    break;
+                default:
+                    break;
+                    
+            }
+        }
+
+        if(write_process.cursorPos == User_Req.len)
+        {
+            User_Req.type = REQ_TYPE_NOREQ;
+            User_Req.state = REQ_STATE_READY;
+            if(write_process.CB)
+            {
+                write_process.CB();
+            }
+        }
+    }
+    if(timer == 0 && write_process.cursorPos == 0)
     {
         LCD_setPosProc();
-    }
-    
-    if(write_process.cursorPos < User_Req.len) 
-    {
-        timer++; 
-        switch(LCD_sendingState)
-        {
-            case LCD_SendMOSTSIG:
-                LCD_ActionEnableHighMostSig(LCD_INPUT_COMMAND, User_Req.s[write_process.cursorPos]);
-                if(timer == 2)
-                {
-                    LCD_sendingState = LCD_SENDLEASTSIG;
-                }
-                break;
-            case LCD_SENDLEASTSIG:
-                LCD_ActionEnableHighLeastSig(User_Req.s[write_process.cursorPos]);
-                if(timer == 4)
-                {
-                    LCD_sendingState = LCD_SENDENLOW;
-                }
-                break;
-            case LCD_SENDENLOW:
-                LCD_ActionEnableLow();
-                if(timer == 6)
-                {
-                    LCD_sendingState = LCD_SendMOSTSIG;
-                    write_process.cursorPos++;
-                    timer = 0;
-                }
-                break;
-            default:
-                break;
-                
-        }
-    }
-    if(write_process.cursorPos == User_Req.len)
-    {
-        User_Req.type = REQ_TYPE_NOREQ;
-        User_Req.state = REQ_STATE_READY;
-        if(write_process.CB)
-        {
-            write_process.CB();
-        }
     }
 }
     
@@ -788,34 +811,46 @@ void LCD_setPosProc(void)
     {
         LOC_var = User_Req.ypos;
     }
-    else if(User_Req.ypos == 1)
+    else if(User_Req.xpos == 1)
     {
         LOC_var = User_Req.ypos + 0x40 ;
     }
     switch(LCD_setPosState)
     {
         case LCD_SendMOSTSIG:
-            LCD_ActionEnableHighMostSig(LCD_INPUT_COMMAND, LOC_var);
+            Pos_Flag = 1;
+            if(timer == 1)
+            {
+                LCD_ActionEnableHighMostSig((LOC_var+128), LCD_INPUT_COMMAND);
+            }
+            
             if(timer == 2)
             {
                 LCD_setPosState = LCD_SENDLEASTSIG;
             }
             break;
         case LCD_SENDLEASTSIG:
-            LCD_ActionEnableHighLeastSig(LOC_var);
+            if(timer == 3)
+            {
+                LCD_ActionEnableHighLeastSig((LOC_var+128));
+            }     
             if(timer == 4)
             {
                 LCD_setPosState = LCD_SENDENLOW;
             }
             break;
         case LCD_SENDENLOW:
-            LCD_ActionEnableLow();
+            if(timer == 5)
+            {
+                LCD_ActionEnableLow();
+            }     
             if(timer == 6)
             {
                 LCD_setPosState = LCD_SendMOSTSIG;
                 timer = 0;
-                User_Req.state = REQ_STATE_READY;
-                User_Req.type = REQ_TYPE_NOREQ;
+                //User_Req.state = REQ_STATE_READY;
+                //User_Req.type = REQ_TYPE_NOREQ;
+                Pos_Flag = 0;
                 if(write_process.CB)
                 {
                     write_process.CB();
