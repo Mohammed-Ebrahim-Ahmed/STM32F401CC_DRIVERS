@@ -315,16 +315,16 @@ RCC_WrongConfig_t RCC_enableAPBPeriCLK(uint32_t APBPeriOption)
     {
         LOC_ErrorStatus = RCC_isOk;
 
-        if( (APBPeriOption == RCC_APB2_TIM11)   &&
-            (APBPeriOption == RCC_APB2_TIM10)   &&
-            (APBPeriOption == RCC_APB2_TIM9)    &&
-            (APBPeriOption == RCC_APB2_SYSCFG)  &&
-            (APBPeriOption == RCC_APB2_SPI4)    &&
-            (APBPeriOption == RCC_APB2_SPI1)    &&
-            (APBPeriOption == RCC_APB2_SDIO)    &&
-            (APBPeriOption == RCC_APB2_ADC1)    &&
-            (APBPeriOption == RCC_APB2_USART6)  &&
-            (APBPeriOption == RCC_APB2_USART1)  &&
+        if( (APBPeriOption == RCC_APB2_TIM11)   ||
+            (APBPeriOption == RCC_APB2_TIM10)   ||
+            (APBPeriOption == RCC_APB2_TIM9)    ||
+            (APBPeriOption == RCC_APB2_SYSCFG)  ||
+            (APBPeriOption == RCC_APB2_SPI4)    ||
+            (APBPeriOption == RCC_APB2_SPI1)    ||
+            (APBPeriOption == RCC_APB2_SDIO)    ||
+            (APBPeriOption == RCC_APB2_ADC1)    ||
+            (APBPeriOption == RCC_APB2_USART6)  ||
+            (APBPeriOption == RCC_APB2_USART1)  ||
             (APBPeriOption == RCC_APB2_TIM1)     )
         {
             RCC->RCC_APB2ENR |= APBPeriOption;

@@ -141,7 +141,8 @@ typedef enum{
     GPIO_WrongSpeed,
     GPIO_WrongMode,
     GPIO_WrongSetValue,
-    GPIO_WrongGetValue
+    GPIO_WrongGetValue,
+    GPIO_WrongAF
 } GPIO_ErrorStatus_t;
 
 /********************************************************************************************************************/
@@ -175,6 +176,31 @@ GPIO_ErrorStatus_t GPIO_SetPinValue(volatile void*  GPIO_Port, uint32_t GPIO_Pin
  */
 GPIO_ErrorStatus_t GPIO_GetPinValue(volatile void*  GPIO_Port, uint32_t GPIO_Pin, uint32_t* GPIO_Status);
 
+/**
+ * @brief This function allow you to select your alternate function (special functions like uart, spi,..etc).note(make sure to select the right pins according to the board you are working on)
+ * 
+ * @param GPIO_Port The Port which the pin is related to 
+ * @param GPIO_Pin the pin you want to get its value
+ * @param GPIO_AF_SEL please select AF between GPIO_AF_0 to GPIO_AF_15
+ * GPIO_AF_0  ---> system
+ * GPIO_AF_1  ---> TIM1/TIM2
+ * GPIO_AF_2  ---> TIM3..TIM5
+ * GPIO_AF_3  ---> TIM9..TIM11
+ * GPIO_AF_4  ---> I2C 1..3
+ * GPIO_AF_5  ---> SPI 1..4
+ * GPIO_AF_6  ---> SPI 3
+ * GPIO_AF_7  ---> USART 1..2
+ * GPIO_AF_8  ---> USART 6
+ * GPIO_AF_9  ---> I2C 2..3
+ * GPIO_AF_10 ---> OTG_FS
+ * GPIO_AF_11 ---> 
+ * GPIO_AF_12 ---> SDIO
+ * GPIO_AF_13 --->
+ * GPIO_AF_14 --->
+ * GPIO_AF_15 ---> EVENTOUT
+ * @return GPIO_ErrorStatus_t 
+ */
+GPIO_ErrorStatus_t GPIO_SetAlernateFunction(volatile void*  GPIO_Port, uint32_t GPIO_Pin, uint32_t GPIO_AF_SEL);
 
 /*********************************************************************************************************************/
 

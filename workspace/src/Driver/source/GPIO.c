@@ -22,6 +22,7 @@
 #define GPIO_MODER_BITS_SHIFT 3
 #define GPIO_OTYPER_BITS_SHIFT 2
 
+
 /**
  * @brief This the input, output, special function and analog configurations
  * 
@@ -251,6 +252,77 @@ GPIO_ErrorStatus_t GPIO_GetPinValue(volatile void* GPIO_Port, uint32_t GPIO_Pin,
     else
     {
         *GPIO_Status = ((((volatile GPIO_Peri_t* const)(GPIO_Port))->GPIO_IDR >> GPIO_Pin) & GPIO_Bit_MASK);
+    }
+    return LOC_ErrorStatus;
+}
+
+GPIO_ErrorStatus_t GPIO_SetAlernateFunction(volatile void*  GPIO_Port, uint32_t GPIO_Pin, uint32_t GPIO_AF_SEL)
+{
+    GPIO_ErrorStatus_t LOC_ErrorStatus = GPIO_isNotOk;
+    uint32_t LOC_Val = 0;
+
+    if((GPIO_Pin != GPIO_PIN0) &&
+       (GPIO_Pin != GPIO_PIN1) && 
+       (GPIO_Pin != GPIO_PIN2) &&
+       (GPIO_Pin != GPIO_PIN3) &&
+       (GPIO_Pin != GPIO_PIN4) &&
+       (GPIO_Pin != GPIO_PIN5) &&
+       (GPIO_Pin != GPIO_PIN6) &&
+       (GPIO_Pin != GPIO_PIN7) &&
+       (GPIO_Pin != GPIO_PIN8) &&
+       (GPIO_Pin != GPIO_PIN9) &&
+       (GPIO_Pin != GPIO_PIN10) &&
+       (GPIO_Pin != GPIO_PIN11) &&
+       (GPIO_Pin != GPIO_PIN12) &&
+       (GPIO_Pin != GPIO_PIN13) && 
+       (GPIO_Pin != GPIO_PIN14) &&
+       (GPIO_Pin != GPIO_PIN15) )
+    {
+        LOC_ErrorStatus = GPIO_WrongPin;
+    }
+    else if((GPIO_Port != GPIO_PORTA) &&
+            (GPIO_Port != GPIO_PORTB) &&
+            (GPIO_Port != GPIO_PORTC))
+    {
+        LOC_ErrorStatus = GPIO_WrongPort;
+    }
+    else if((GPIO_AF_SEL != GPIO_AF_0 ) &&
+            (GPIO_AF_SEL != GPIO_AF_1 ) && 
+            (GPIO_AF_SEL != GPIO_AF_2 ) &&
+            (GPIO_AF_SEL != GPIO_AF_3 ) &&
+            (GPIO_AF_SEL != GPIO_AF_4 ) &&
+            (GPIO_AF_SEL != GPIO_AF_5 ) &&
+            (GPIO_AF_SEL != GPIO_AF_6 ) &&
+            (GPIO_AF_SEL != GPIO_AF_7 ) &&
+            (GPIO_AF_SEL != GPIO_AF_8 ) &&
+            (GPIO_AF_SEL != GPIO_AF_9 ) &&
+            (GPIO_AF_SEL != GPIO_AF_10) &&
+            (GPIO_AF_SEL != GPIO_AF_11) &&
+            (GPIO_AF_SEL != GPIO_AF_12) &&
+            (GPIO_AF_SEL != GPIO_AF_13) && 
+            (GPIO_AF_SEL != GPIO_AF_14) &&
+            (GPIO_AF_SEL != GPIO_AF_15) )  
+    {
+        LOC_ErrorStatus = GPIO_WrongAF;
+    }
+    else
+    {
+        LOC_ErrorStatus = GPIO_isOk;
+
+        if(GPIO_Pin >= GPIO_PIN0 && GPIO_Pin < GPIO_PIN8)
+        {
+            LOC_Val = ((volatile GPIO_Peri_t * const) GPIO_Port)->GPIO_AFRL ;
+            LOC_Val &= ~(GPIO_AF_MASK<<(GPIO_Pin * BIT_WIDTH_4));
+            LOC_Val |= (GPIO_AF_SEL<<(GPIO_Pin * BIT_WIDTH_4));
+            ((volatile GPIO_Peri_t * const) GPIO_Port)->GPIO_AFRL = LOC_Val ;
+        }
+        else
+        {
+            LOC_Val = ((volatile GPIO_Peri_t * const) GPIO_Port)->GPIO_AFRH ;
+            LOC_Val &= ~(GPIO_AF_MASK<<(GPIO_Pin * BIT_WIDTH_4));
+            LOC_Val |= (GPIO_AF_SEL<<(GPIO_Pin * BIT_WIDTH_4));
+            ((volatile GPIO_Peri_t * const) GPIO_Port)->GPIO_AFRH = LOC_Val ;           
+        }
     }
     return LOC_ErrorStatus;
 }

@@ -10,10 +10,14 @@
 #define NULL (void*)0
 #endif
 
+#define TE 0x08
 #define TXE  0x80
+#define TC 0x40
 #define RXNE 0x20
 #define TXEIE 0x80
 #define RXNEIE 0x20
+#define TCIE 0x40
+#define UE 0x2000
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
@@ -93,9 +97,12 @@ UART_errorStatus_t UART_SentBufferZCASYNC(volatile void* UART_Bus, uint8_t *buff
             TX_Buffer.TXbuffer.len = len;
             TX_Buffer.TXbuffer.position = 0;
             TX_Buffer.TXCB = cb;
-            ((volatile UART_t * const)UART1)->USART_CR1 |= TXEIE;
+            ((volatile UART_t * const)UART1)->USART_BRR |= 104 << 4;
+            ((volatile UART_t * const)UART1)->USART_CR1 |= TCIE;
+            ((volatile UART_t * const)UART1)->USART_CR1 |= TE;
+            ((volatile UART_t * const)UART1)->USART_CR1 |= UE;
             ((volatile UART_t * const)UART1)->USART_DR = TX_Buffer.TXbuffer.buffer[0];
-            TX_Buffer.TXbuffer.position ++; 
+            TX_Buffer.TXbuffer.position++; 
         }
         
 
@@ -131,6 +138,7 @@ UART_errorStatus_t UART_RecieveBufferZCASYNC(volatile void* UART_Bus, uint8_t *b
             RX_Buffer.RXbuffer.position = 0;
             RX_Buffer.RXCB = cb;
             ((volatile UART_t * const)UART1)->USART_CR1 |= RXNEIE;
+           
         }        
     }
     return UART_errorStatus;
@@ -139,11 +147,16 @@ UART_errorStatus_t UART_RecieveBufferZCASYNC(volatile void* UART_Bus, uint8_t *b
 
 void USART1_IRQHandler (void)
 {
-    if( (((volatile UART_t * const)UART1)->USART_DR & TXE) )
+    volatile uint8_t x = 0;
+    x++;
+    if( (((volatile UART_t * const)UART1)->USART_SR & TC) )
     {
+        ((volatile UART_t * const)UART1)->USART_SR &= ~TC ;
         if(TX_Buffer.TXbuffer.position < TX_Buffer.TXbuffer.len)
         {
+            ((volatile UART_t * const)UART1)->USART_CR1 |= TE;
             ((volatile UART_t * const)UART1)->USART_DR = TX_Buffer.TXbuffer.buffer[TX_Buffer.TXbuffer.position];
+            
             TX_Buffer.TXbuffer.position++;
         }
         else
@@ -157,12 +170,14 @@ void USART1_IRQHandler (void)
         }
     }
 
-    if( (((volatile UART_t * const)UART1)->USART_DR & RXNE) )
+    if( (((volatile UART_t * const)UART1)->USART_SR & RXNE) )
     {
         if(RX_Buffer.RXbuffer.position < RX_Buffer.RXbuffer.len)
         {
+            
             RX_Buffer.RXbuffer.buffer[RX_Buffer.RXbuffer.position] = ((volatile UART_t * const)UART1)->USART_DR;
             RX_Buffer.RXbuffer.position++;
+            ((volatile UART_t * const)UART1)->USART_CR1 |= TE;
         }
         else
         {
