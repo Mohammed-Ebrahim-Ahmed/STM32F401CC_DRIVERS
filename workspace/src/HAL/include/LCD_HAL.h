@@ -8,8 +8,7 @@
 /********************************************************************************************************/
 /************************************************Defines*************************************************/
 /********************************************************************************************************/
-#define FOUR_BIT_MODE 7
-#define EIGHT_BIT_MODE 11
+
 
 #define INIT_STATE 0
 #define OPERATION_STATE 1
@@ -30,7 +29,7 @@ typedef enum{
 typedef struct
 {
 
-    volatile void* LCD_DataPort [LCD_MODE];
+    volatile void* const LCD_DataPort [LCD_MODE];
     uint32_t LCD_DataPin [LCD_MODE];
 } LCD_Pins_t;
 
