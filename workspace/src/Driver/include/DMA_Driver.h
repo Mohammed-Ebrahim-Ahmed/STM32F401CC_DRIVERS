@@ -166,7 +166,8 @@ typedef enum{
     DMA_WrongPeriBurst,
     DMA_WrongCT,
     DMA_WrongNItems,
-    DMA_WrongIRQ
+    DMA_WrongIRQ,
+    DMA_WrongFlag
 
 }DMA_errorStatus_t;
 /********************************************************************************************************/
@@ -194,8 +195,8 @@ DMA_errorStatus_t DMA_DisableIRQ(void* dma, uint8_t stream, uint64_t IRQ);
 DMA_errorStatus_t DMA_EnableCircularMode(void* dma, uint8_t stream);
 DMA_errorStatus_t DMA_DisableCircularMode(void* dma, uint8_t stream);
 DMA_errorStatus_t DMA_SelectFlowController(void* dma, uint8_t stream, uint64_t flow_controller);
-DMA_errorStatus_t DMA_ClearLIFCRFlag(void* dma, uint64_t flag);
-DMA_errorStatus_t DMA_ClearHIFCRFlag(void* dma, uint64_t flag);
+DMA_errorStatus_t DMA_ClearLIFCRFlag(void* dma, uint8_t stream, uint64_t flag);
+DMA_errorStatus_t DMA_ClearHIFCRFlag(void* dma, uint8_t stream, uint64_t flag);
 DMA_errorStatus_t DMA_SetFIFOThreshold(void* dma, uint8_t stream, uint64_t fifo_th);
-
+DMA_errorStatus_t DMA_GET_FIFO_Status(void *dma, uint8_t stream, uint8_t *Status);
 #endif // DRIVER_SOURCE_DMA_DRIVER_C_

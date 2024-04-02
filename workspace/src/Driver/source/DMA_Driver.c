@@ -771,8 +771,96 @@ DMA_errorStatus_t DMA_SelectFlowController(void* dma, uint8_t stream, uint64_t f
 
         loc_flow_controller = (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).CR;
         loc_flow_controller &= ~ DMA_PERI_FLOW_CLEAR_FLAG;
-        loc_flow_controller |= (uint32_t)loc_flow_controller;
+        loc_flow_controller |= (uint32_t)flow_controller;
         (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).CR = loc_flow_controller;
     }
     return LOC_errorStatus;    
+}
+
+DMA_errorStatus_t DMA_ClearLIFCRFlag(void* dma, uint8_t stream, uint64_t flag)
+{
+    DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
+    uint8_t loc_assert_flag = flag >> DMA_INPUT_ASSERT_OFFSET;
+
+    uint32_t loc_flag = 0;
+    if(stream < 0 || stream > DMA_MAX_STRM_NUM)
+    {
+        LOC_errorStatus = DMA_WrongStream;
+    }   
+    else if(loc_assert_flag != DMA_GET_INT_STS_CLR_ASSERT_L_MASK)
+    {
+        LOC_errorStatus = DMA_WrongReq;
+    }
+    else
+    {
+        LOC_errorStatus = DMA_IsOk;
+        ((DMA_Peri_t*)dma)->LIFCR &= ~(uint32_t)flag;
+    }
+    return LOC_errorStatus;
+}
+
+DMA_errorStatus_t DMA_ClearHIFCRFlag(void* dma, uint8_t stream, uint64_t flag)
+{
+    DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
+    uint8_t loc_assert_flag = flag >> DMA_INPUT_ASSERT_OFFSET;
+
+    uint32_t loc_flag = 0;
+    if(stream < 0 || stream > DMA_MAX_STRM_NUM)
+    {
+        LOC_errorStatus = DMA_WrongStream;
+    }   
+    else if(loc_assert_flag != DMA_GET_INT_STS_CLR_ASSERT_H_MASK)
+    {
+        LOC_errorStatus = DMA_WrongReq;
+    }
+    else
+    {
+        LOC_errorStatus = DMA_IsOk;
+        ((DMA_Peri_t*)dma)->HIFCR &= ~(uint32_t)flag;
+    }   
+    return LOC_errorStatus; 
+}
+
+DMA_errorStatus_t DMA_SetFIFOThreshold(void* dma, uint8_t stream, uint64_t fifo_th)
+{
+    DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
+    uint8_t loc_assert_fifo_th = fifo_th >> DMA_INPUT_ASSERT_OFFSET;
+
+    uint32_t loc_fifo_th = 0;
+    if(stream < 0 || stream > DMA_MAX_STRM_NUM)
+    {
+        LOC_errorStatus = DMA_WrongStream;
+    }   
+    else if(loc_assert_fifo_th != DMA_FIFO_THRES_ASSERT_MASK)
+    {
+        LOC_errorStatus = DMA_WrongReq;
+    }
+    else
+    {
+        LOC_errorStatus = DMA_IsOk;
+        loc_fifo_th = (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).FCR;
+        loc_fifo_th &= ~ DMA_PERI_FLOW_CLEAR_FLAG;
+        loc_fifo_th |= (uint32_t)fifo_th;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).FCR = loc_fifo_th;
+    }   
+    return LOC_errorStatus;     
+}
+
+DMA_errorStatus_t DMA_GET_FIFO_Status(void *dma, uint8_t stream, uint8_t *Status)
+{
+    DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;   
+    if(stream < 0 || stream > DMA_MAX_STRM_NUM)
+    {
+        LOC_errorStatus = DMA_WrongStream;
+    }  
+    else if(Status == NULL)
+    {
+        LOC_errorStatus = DMA_NULLptr;
+    } 
+    else
+    {
+        LOC_errorStatus = DMA_IsOk;
+        *Status = ((((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).FCR & DMA_FIFO_GET_FLAG);
+    }
+    return LOC_errorStatus;
 }
