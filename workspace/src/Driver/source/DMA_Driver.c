@@ -499,9 +499,6 @@ DMA_errorStatus_t DMA_SetStreamPriority(void* dma, uint8_t stream, uint64_t prio
 DMA_errorStatus_t DMA_SetNumberOfDataItems(void* dma, uint8_t stream, uint64_t nItems)
 {
     DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
-    uint8_t loc_assert_nItems = nItems >> DMA_INPUT_ASSERT_OFFSET;
-
-    uint32_t loc_nItems = 0;    
 
     if(stream < 0 || stream > DMA_MAX_STRM_NUM)
     {
@@ -537,14 +534,14 @@ DMA_errorStatus_t DMA_SetDataAddress(void* dma, uint8_t stream, uint32_t* MemAdd
     else
     {
         LOC_errorStatus = DMA_IsOk;
-        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).PAR = PeriAddr;
-        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M0AR = MemAddr;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).PAR = (volatile uint32_t) PeriAddr;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M0AR =(volatile uint32_t) MemAddr;
 
     }
     return LOC_errorStatus;
 }
 
-DMA_errorStatus_t DMA_SetDataAddressDB(void* dma, uint8_t stream, uint32_t* Mem0Addr, uint32_t Mem1Addr ,uint32_t* PeriAddr)
+DMA_errorStatus_t DMA_SetDataAddressDB(void* dma, uint8_t stream, uint32_t* Mem0Addr, uint32_t* Mem1Addr ,uint32_t* PeriAddr)
 {
     DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;  
     if(stream < 0 || stream > DMA_MAX_STRM_NUM)
@@ -566,9 +563,9 @@ DMA_errorStatus_t DMA_SetDataAddressDB(void* dma, uint8_t stream, uint32_t* Mem0
     else
     {
         LOC_errorStatus = DMA_IsOk;
-        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).PAR = PeriAddr;
-        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M0AR = Mem0Addr;
-        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M1AR = Mem1Addr;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).PAR = (volatile uint32_t)PeriAddr;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M0AR =(volatile uint32_t) Mem0Addr;
+        (((DMA_Peri_t*)dma)->DMA_STRM_REG[stream]).M1AR =(volatile uint32_t)Mem1Addr;
 
     }
     return LOC_errorStatus;    
@@ -782,7 +779,6 @@ DMA_errorStatus_t DMA_ClearLIFCRFlag(void* dma, uint8_t stream, uint64_t flag)
     DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
     uint8_t loc_assert_flag = flag >> DMA_INPUT_ASSERT_OFFSET;
 
-    uint32_t loc_flag = 0;
     if(stream < 0 || stream > DMA_MAX_STRM_NUM)
     {
         LOC_errorStatus = DMA_WrongStream;
@@ -804,7 +800,6 @@ DMA_errorStatus_t DMA_ClearHIFCRFlag(void* dma, uint8_t stream, uint64_t flag)
     DMA_errorStatus_t LOC_errorStatus = DMA_IsNotOk;
     uint8_t loc_assert_flag = flag >> DMA_INPUT_ASSERT_OFFSET;
 
-    uint32_t loc_flag = 0;
     if(stream < 0 || stream > DMA_MAX_STRM_NUM)
     {
         LOC_errorStatus = DMA_WrongStream;

@@ -165,10 +165,7 @@ typedef enum{
     DMA_WrongMemoryBurst,
     DMA_WrongPeriBurst,
     DMA_WrongCT,
-    DMA_WrongNItems,
-    DMA_WrongIRQ,
-    DMA_WrongFlag
-
+    DMA_WrongIRQ
 }DMA_errorStatus_t;
 /********************************************************************************************************/
 /************************************************APIs****************************************************/
@@ -187,7 +184,7 @@ DMA_errorStatus_t DMA_SetTransferMode(void* dma, uint8_t stream, uint64_t Memory
 DMA_errorStatus_t DMA_SetStreamPriority(void* dma, uint8_t stream, uint64_t priority);
 DMA_errorStatus_t DMA_SetNumberOfDataItems(void* dma, uint8_t stream, uint64_t nItems);
 DMA_errorStatus_t DMA_SetDataAddress(void* dma, uint8_t stream, uint32_t* MemAddr, uint32_t* PeriAddr);
-DMA_errorStatus_t DMA_SetDataAddressDB(void* dma, uint8_t stream, uint32_t* Mem0Addr, uint32_t Mem1Addr ,uint32_t* PeriAddr);
+DMA_errorStatus_t DMA_SetDataAddressDB(void* dma, uint8_t stream, uint32_t* Mem0Addr, uint32_t* Mem1Addr ,uint32_t* PeriAddr);
 DMA_errorStatus_t DMA_EnableStream(void* dma, uint8_t stream);
 DMA_errorStatus_t DMA_DisableStream(void* dma, uint8_t stream);
 DMA_errorStatus_t DMA_EnableIRQ(void* dma, uint8_t stream, uint64_t IRQ);

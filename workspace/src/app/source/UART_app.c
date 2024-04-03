@@ -4,6 +4,7 @@
 #include "RCC.h"
 #include "NVIC.h"
 #include "GPIO.h"
+#include "DMA_Driver.h"
 
 volatile uint8_t buffer2 [5] = {0};
 void Dummy(void);
