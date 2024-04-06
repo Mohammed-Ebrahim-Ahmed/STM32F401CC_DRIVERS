@@ -20,12 +20,23 @@
 #define UE 0x2000
 #define RE 0x4
 
+#define LBD  0x100
+#define SBK  0x001
+#define LINEN 0x4000
+#define LBDIE 0x40
+#define LBDL  0x20
+
 #define MANTISSA_MAX 0xFFF
 #define FRACTION_MAX 0xF
 #define MANTISSA_SHIFT 4
 #define BDR_MASK 0xFFFF
 #define STOP_BITS_MASK 0x3000
 #define PARITY_ENABLE 0x400
+
+#define UART_1_CB 0
+#define UART_2_CB 1
+#define UART_6_CB 2
+#define NUM_OF_UART 3
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
@@ -69,6 +80,8 @@ volatile static RX_Buffer_t RX_Buffer = {
     .RXCB = NULL,
     .RXstate = RX_READY
 };
+
+BrakeCB_t Brake_CB_FN[NUM_OF_UART] = {NULL,NULL,NULL};
 
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
@@ -259,50 +272,230 @@ UART_errorStatus_t UART_ControlConfigParity(volatile void* UART_Bus, uint8_t par
     }
     return UART_errorStatus;
 }
-        
-void USART1_IRQHandler (void)
+
+UART_errorStatus_t UART_Config_Generate_Brake(volatile void* UART_Bus, uint8_t BrakeLength)
 {
-    volatile uint8_t x = 0;
-    x++;
-    if( (((volatile UART_t * const)UART1)->USART_SR & TC) )
+    UART_errorStatus_t UART_errorStatus = UART_NotOk; 
+    uint32_t temp = 0;
+    if(UART_Bus != UART1 && UART_Bus != UART2 && UART_Bus != UART6)
     {
-        ((volatile UART_t * const)UART1)->USART_SR &= ~TC ;
-        if(TX_Buffer.TXbuffer.position < TX_Buffer.TXbuffer.len)
+        UART_errorStatus = UART_WrongBus;
+    }
+    else if(BrakeLength != BRAKE_10_BIT && BrakeLength != BRAKE_11_BIT)
+    {
+        UART_errorStatus = UART_WrongBrakeLength;
+    }
+    else
+    {
+        UART_errorStatus = UART_Ok;
+        ((volatile UART_t * const)UART_Bus)->USART_CR2 |= LINEN;
+        temp = ((volatile UART_t * const)UART_Bus)->USART_CR2;
+        temp &= ~ LBDL;
+        temp |= BrakeLength;
+        ((volatile UART_t * const)UART_Bus)->USART_CR2 = temp;
+        ((volatile UART_t * const)UART_Bus)->USART_CR2 |= LBDIE;
+        ((volatile UART_t * const)UART_Bus)->USART_CR1 |= SBK;
+
+
+    }
+    return UART_errorStatus;
+}      
+UART_errorStatus_t UART_BrakeCB(volatile void* UART_Bus, BrakeCB_t BrakeCB)
+{   
+    UART_errorStatus_t UART_errorStatus = UART_NotOk; 
+    uint8_t index = 0;
+    if (BrakeCB == NULL)
+    {
+        UART_errorStatus = UART_Nullptr;
+    }
+    else if(UART_Bus == NULL)
+    {
+        UART_errorStatus = UART_Nullptr;
+    }
+    else
+    {
+        UART_errorStatus = UART_Ok;
+        if((uint32_t)UART_Bus == UART1)
         {
-            ((volatile UART_t * const)UART1)->USART_CR1 |= TE;
-            ((volatile UART_t * const)UART1)->USART_DR = TX_Buffer.TXbuffer.buffer[TX_Buffer.TXbuffer.position];
-            
-            TX_Buffer.TXbuffer.position++;
+            index = UART_1_CB;
+        }
+        else if((uint32_t)UART_Bus == UART2)
+        {
+            index = UART_2_CB;
         }
         else
         {
-            TX_Buffer.TXstate = TX_READY;
-            if(TX_Buffer.TXCB)
+            index = UART_6_CB;
+        }
+        Brake_CB_FN[index] = BrakeCB;
+    }
+    return UART_errorStatus;
+}
+void USART1_IRQHandler (void)
+{
+    if((((volatile UART_t * const)UART1)->USART_SR & LBD))
+    {
+        if((Brake_CB_FN[UART_1_CB]) != NULL)
+        {
+            Brake_CB_FN[UART_1_CB]();
+        }
+            
+    }
+    else
+    {
+        if( (((volatile UART_t * const)UART1)->USART_SR & TC) )
+        {
+            ((volatile UART_t * const)UART1)->USART_SR &= ~TC ;
+            if(TX_Buffer.TXbuffer.position < TX_Buffer.TXbuffer.len)
             {
-                TX_Buffer.TXCB();
+                ((volatile UART_t * const)UART1)->USART_CR1 |= TE;
+                ((volatile UART_t * const)UART1)->USART_DR = TX_Buffer.TXbuffer.buffer[TX_Buffer.TXbuffer.position];
+                
+                TX_Buffer.TXbuffer.position++;
             }
-            ((volatile UART_t * const)UART1)->USART_CR1 &= ~TXEIE;
+            else
+            {
+                TX_Buffer.TXstate = TX_READY;
+                if(TX_Buffer.TXCB)
+                {
+                    TX_Buffer.TXCB();
+                }
+                ((volatile UART_t * const)UART1)->USART_CR1 &= ~TXEIE;
+            }
+        }
+
+        if( (((volatile UART_t * const)UART1)->USART_SR & RXNE) )
+        {
+            if(RX_Buffer.RXbuffer.position < RX_Buffer.RXbuffer.len)
+            {
+                
+                RX_Buffer.RXbuffer.buffer[RX_Buffer.RXbuffer.position] = ((volatile UART_t * const)UART1)->USART_DR;
+                RX_Buffer.RXbuffer.position++;
+                ((volatile UART_t * const)UART1)->USART_CR1 |= RE;
+            }
+            else
+            {
+                RX_Buffer.RXstate = RX_READY;
+                ((volatile UART_t * const)UART1)->USART_CR1 &= ~RXNEIE;
+                if(RX_Buffer.RXCB)
+                {
+                    RX_Buffer.RXCB();
+                }
+                
+            }
         }
     }
 
-    if( (((volatile UART_t * const)UART1)->USART_SR & RXNE) )
+}
+
+void USART2_IRQHandler (void)
+{
+    if((((volatile UART_t * const)UART2)->USART_SR & LBD))
     {
-        if(RX_Buffer.RXbuffer.position < RX_Buffer.RXbuffer.len)
+        if((Brake_CB_FN[UART_2_CB]) != NULL)
         {
-            
-            RX_Buffer.RXbuffer.buffer[RX_Buffer.RXbuffer.position] = ((volatile UART_t * const)UART1)->USART_DR;
-            RX_Buffer.RXbuffer.position++;
-            ((volatile UART_t * const)UART1)->USART_CR1 |= RE;
-        }
-        else
-        {
-            RX_Buffer.RXstate = RX_READY;
-            ((volatile UART_t * const)UART1)->USART_CR1 &= ~RXNEIE;
-            if(RX_Buffer.RXCB)
-            {
-                RX_Buffer.RXCB();
-            }
-            
+            Brake_CB_FN[UART_2_CB]();
         }
     }
+    else
+    {
+        if( (((volatile UART_t * const)UART2)->USART_SR & TC) )
+        {
+            ((volatile UART_t * const)UART2)->USART_SR &= ~TC ;
+            if(TX_Buffer.TXbuffer.position < TX_Buffer.TXbuffer.len)
+            {
+                ((volatile UART_t * const)UART2)->USART_CR1 |= TE;
+                ((volatile UART_t * const)UART2)->USART_DR = TX_Buffer.TXbuffer.buffer[TX_Buffer.TXbuffer.position];
+                
+                TX_Buffer.TXbuffer.position++;
+            }
+            else
+            {
+                TX_Buffer.TXstate = TX_READY;
+                if(TX_Buffer.TXCB)
+                {
+                    TX_Buffer.TXCB();
+                }
+                ((volatile UART_t * const)UART2)->USART_CR1 &= ~TXEIE;
+            }
+        }
+
+        if( (((volatile UART_t * const)UART2)->USART_SR & RXNE) )
+        {
+            if(RX_Buffer.RXbuffer.position < RX_Buffer.RXbuffer.len)
+            {
+                
+                RX_Buffer.RXbuffer.buffer[RX_Buffer.RXbuffer.position] = ((volatile UART_t * const)UART2)->USART_DR;
+                RX_Buffer.RXbuffer.position++;
+                ((volatile UART_t * const)UART2)->USART_CR1 |= RE;
+            }
+            else
+            {
+                RX_Buffer.RXstate = RX_READY;
+                ((volatile UART_t * const)UART2)->USART_CR1 &= ~RXNEIE;
+                if(RX_Buffer.RXCB)
+                {
+                    RX_Buffer.RXCB();
+                }
+                
+            }
+        }
+    }
+
+}
+
+void USART6_IRQHandler (void)
+{
+    if((((volatile UART_t * const)UART6)->USART_SR & LBD))
+    {
+        if((Brake_CB_FN[UART_6_CB]) != NULL)
+        {
+            Brake_CB_FN[UART_6_CB]();
+        }
+    }
+    else
+    {
+        if( (((volatile UART_t * const)UART6)->USART_SR & TC) )
+        {
+            ((volatile UART_t * const)UART6)->USART_SR &= ~TC ;
+            if(TX_Buffer.TXbuffer.position < TX_Buffer.TXbuffer.len)
+            {
+                ((volatile UART_t * const)UART6)->USART_CR1 |= TE;
+                ((volatile UART_t * const)UART6)->USART_DR = TX_Buffer.TXbuffer.buffer[TX_Buffer.TXbuffer.position];
+                
+                TX_Buffer.TXbuffer.position++;
+            }
+            else
+            {
+                TX_Buffer.TXstate = TX_READY;
+                if(TX_Buffer.TXCB)
+                {
+                    TX_Buffer.TXCB();
+                }
+                ((volatile UART_t * const)UART6)->USART_CR1 &= ~TXEIE;
+            }
+        }
+
+        if( (((volatile UART_t * const)UART6)->USART_SR & RXNE) )
+        {
+            if(RX_Buffer.RXbuffer.position < RX_Buffer.RXbuffer.len)
+            {
+                
+                RX_Buffer.RXbuffer.buffer[RX_Buffer.RXbuffer.position] = ((volatile UART_t * const)UART6)->USART_DR;
+                RX_Buffer.RXbuffer.position++;
+                ((volatile UART_t * const)UART6)->USART_CR1 |= RE;
+            }
+            else
+            {
+                RX_Buffer.RXstate = RX_READY;
+                ((volatile UART_t * const)UART6)->USART_CR1 &= ~RXNEIE;
+                if(RX_Buffer.RXCB)
+                {
+                    RX_Buffer.RXCB();
+                }
+                
+            }
+        }
+    }
+
 }

@@ -36,6 +36,9 @@
 #define EVEN_PARITY 0x0
 #define ODD_PARITY  0x200
 
+#define BRAKE_10_BIT 0x00
+#define BRAKE_11_BIT 0x20
+
 #define F_CLK 16000000
 /********************************************************************************************************/
 /************************************************Types***************************************************/
@@ -51,12 +54,14 @@ typedef enum{
     UART_WrongStopBit,
     UART_WrongMantissa,
     UART_WrongFraction,
-    UART_WrongParity
+    UART_WrongParity,
+    UART_WrongBrakeLength
 }UART_errorStatus_t;
 
 
 typedef void (*TXCB_t)(void);
 typedef void (*RXCB_t)(void);
+typedef void (*BrakeCB_t)(void);
 
 /********************************************************************************************************/
 /************************************************APIs****************************************************/
@@ -67,4 +72,7 @@ UART_errorStatus_t UART_SentBufferZCASYNC(volatile void* UART_Bus, uint8_t* buff
 UART_errorStatus_t UART_RecieveBufferZCASYNC(volatile void* UART_Bus, uint8_t* buffer, uint16_t len, RXCB_t cb );
 UART_errorStatus_t UART_Config(volatile void* UART_Bus, uint8_t WordLength, uint16_t stopbit, uint16_t OverSampling, uint16_t Baudrate);
 UART_errorStatus_t UART_ControlConfigParity(volatile void* UART_Bus, uint8_t parity);
+UART_errorStatus_t UART_Config_Generate_Brake(volatile void* UART_Bus, uint8_t BrakeLength);
+UART_errorStatus_t UART_BrakeCB(volatile void* UART_Bus, BrakeCB_t BrakeCB);
+
 #endif // DRIVER_INCLUDE_UART_H_
