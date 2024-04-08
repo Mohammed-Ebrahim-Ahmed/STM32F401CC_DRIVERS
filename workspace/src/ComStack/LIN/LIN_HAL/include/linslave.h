@@ -14,6 +14,7 @@
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
+typedef struct message_t message_t;
 typedef struct {
     GPIO_Pin_t TxUart_pin ;
     GPIO_Pin_t RxUart_pin ;
@@ -24,7 +25,7 @@ typedef struct {
     uint16_t baudrate;
 }LIN_UART_t;
 
-typedef struct message_t message_t;
+
 
 typedef struct {
     uint8_t idx;
@@ -32,7 +33,7 @@ typedef struct {
     message_t* mes;
 }signal_t;
 
-typedef struct{
+typedef struct message_t{
     uint8_t id;
     uint8_t data[8];
     uint8_t data_len;

@@ -22,8 +22,8 @@
 #define REQ_TYPE_SET_POS 2
 #define REQ_TYPE_NOREQ   3
 
-#define REQ_STATE_BUSY  0
-#define REQ_STATE_READY 1
+#define REQ_STATE_BUSY  1
+#define REQ_STATE_READY 0
 
 #define LCD_INIT_STATE_POWER_ON                         0
 #define LCD_INIT_STATE_FUNCTIONAL_SET_1                 1
@@ -48,54 +48,68 @@
 #define FOUR_BIT_MODE 7
 #define EIGHT_BIT_MODE 11
 
-
+// the number of requests the user can use
+#define NUM_OF_REQUESTS  5
 
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
 
 
-typedef struct{
-    uint8_t* s;
-    volatile uint8_t len;
+typedef struct {
     volatile uint8_t state;
     volatile uint8_t type;
-    volatile uint8_t xpos;
-    volatile uint8_t ypos;
-}User_Req_t;
-
-typedef struct{
-    uint8_t cursorPos;
-    CB_t CB; 
-}write_t;
+    CB_t CB;
+    union {
+        struct {
+            uint8_t* s;
+            volatile uint8_t len;
+            volatile uint8_t xpos;
+            volatile uint8_t ypos;
+            volatile uint8_t cursorPos;
+        } write;
+        struct {
+            volatile uint8_t xpos;
+            volatile uint8_t ypos;
+        } moveCursor;
+        // Add more request types as needed
+    } data;
+} User_Req_t;
 
 
 /********************************************************************************************************/
 /************************************************Variables***********************************************/
 /********************************************************************************************************/
 volatile static uint8_t GLOBAL_LCD_STATE = INIT_STATE;
-volatile static User_Req_t User_Req ={
-    .s = NULL,
-    .len = 0,
-    .state = REQ_STATE_READY,
-    .type = REQ_TYPE_NOREQ,
-    .xpos = 0,
-    .ypos = 0
+//makeing this request as an array
+
+
+User_Req_t User_Req [NUM_OF_REQUESTS] = {
+    [0] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
+    [1] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
+    [2] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
+    [3] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
+    [4] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
 };
-volatile static write_t write_process = {
-    .cursorPos = 0,
-    .CB= NULL
-};
+
+
+
 extern const LCD_Pins_t LCD_Connection;
 volatile static uint8_t LCD_INPUT_FINISHED = 0;
 static volatile uint8_t Pos_Flag = 2;
+//defining the current index to be written
+// volatile static uint32_t req_index = 0;
+// volatile static uint32_t Write_req_index = 0;
+// volatile static uint32_t cursorPos =0;
+
+volatile static uint32_t Req_index = 0;
+volatile static uint8_t cursorPos = 0;
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
 static void LCD_writeProc(void);
 static void LCD_clearProc(void);
 static void LCD_setPosProc(void);
-static void LCD_GPIO_init(void);
 static void LCD_writeInitCommand (uint8_t command);
 static void LCD_ActionEnableHighMostSig(uint8_t input, uint8_t type);
 static void LCD_ActionEnableHighLeastSig(uint8_t input);
@@ -110,15 +124,17 @@ static void LCD_ActionEnableLow (void);
 
 void LCD_TASK(void)
 {
+    uint8_t i = 0;
     if(GLOBAL_LCD_STATE == INIT_STATE)
     {
         LCD_init();
     }
     else if(GLOBAL_LCD_STATE == OPERATION_STATE)
     {
-        if (User_Req.state == REQ_STATE_BUSY)
+
+        if (User_Req[Req_index].state == REQ_STATE_BUSY)
         {
-            switch(User_Req.type)
+            switch(User_Req[Req_index].type)
             {
                 case REQ_TYPE_WRITE:
                     LCD_writeProc();
@@ -135,6 +151,7 @@ void LCD_TASK(void)
                     break;
             }
         }
+
     }
     else if(GLOBAL_LCD_STATE == IDEL_STATE )
     {
@@ -146,10 +163,11 @@ void LCD_TASK(void)
     }
 }
 
-LCD_errorStatus_t LCD_writeString( uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB)
+LCD_errorStatus_t LCD_writeReq( uint8_t* string, uint8_t length, uint8_t xpos, uint8_t ypos, CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
-
+    uint8_t counter = 0;
+    uint8_t is_Registered = 0;
     if(string == NULL)
     {
         LCD_errorStatus = LCD_NullPtr;
@@ -173,18 +191,24 @@ LCD_errorStatus_t LCD_writeString( uint8_t* string, uint8_t length, uint8_t xpos
     else
     {
         LCD_errorStatus = LCD_Ok;
-
-        if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req.state == REQ_STATE_READY)
+        for(counter = 0; ((counter < NUM_OF_REQUESTS) && (!is_Registered)); counter++)
         {
-            User_Req.state = REQ_STATE_BUSY;
-            User_Req.s = string;
-            User_Req.len = length;
-            User_Req.type = REQ_TYPE_WRITE;
-            User_Req.xpos = xpos;
-            User_Req.ypos = ypos;
-            write_process.CB = CB;
-            write_process.cursorPos = 0;
-            
+            if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
+            {
+                User_Req[counter].state = REQ_STATE_BUSY;
+                User_Req[counter].type = REQ_TYPE_WRITE;
+                User_Req[counter].CB = CB;
+                User_Req[counter].data.write.s = string;
+                User_Req[counter].data.write.len = length;
+                User_Req[counter].data.write.xpos = xpos;
+                User_Req[counter].data.write.ypos = ypos;
+                is_Registered = 1;
+            }
+        }
+
+        if(is_Registered == 0)
+        {
+            LCD_errorStatus = LCD_NO_OF_REQ_EXCEEDED;
         }
     }
 
@@ -210,7 +234,8 @@ LCD_errorStatus_t LCD_getState(uint8_t* LCD_state)
 LCD_errorStatus_t LCD_clearScreen(CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
-    
+    uint8_t counter = 0;    
+    uint8_t is_Registered = 0;
     if(CB == NULL)
     {
         LCD_errorStatus = LCD_NullPtr;
@@ -218,12 +243,23 @@ LCD_errorStatus_t LCD_clearScreen(CB_t CB)
     else
     {
         LCD_errorStatus = LCD_Ok;
-        if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req.state == REQ_STATE_READY)
+
+        for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
         {
-            User_Req.state = REQ_STATE_BUSY;
-            User_Req.type = REQ_TYPE_CLEAR;
-            write_process.CB = CB;
+            if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
+            {
+                User_Req[counter].state = REQ_STATE_BUSY;
+                User_Req[counter].type = REQ_TYPE_CLEAR;
+                User_Req[counter].CB = CB;
+                is_Registered = 1;
+            }
         }
+
+        if(is_Registered == 0)
+        {
+            LCD_errorStatus = LCD_NO_OF_REQ_EXCEEDED;
+        }
+
     }
     return LCD_errorStatus;
 }
@@ -231,7 +267,8 @@ LCD_errorStatus_t LCD_clearScreen(CB_t CB)
 LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
-
+    uint8_t counter = 0;
+    uint8_t is_Registered = 0;
     if(xpos <= 0)
     {
         LCD_errorStatus = LCD_WrongXpos;
@@ -247,15 +284,25 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
     else
     {
         LCD_errorStatus = LCD_Ok;
-        if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req.state == REQ_STATE_READY)
+
+        for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
         {
-            User_Req.state = REQ_STATE_BUSY;
-            User_Req.xpos = xpos;
-            User_Req.ypos = ypos;
-            User_Req.type = REQ_TYPE_SET_POS;
-            write_process.cursorPos = 0;
-            write_process.CB = CB;
+            if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
+            {
+                User_Req[counter].state = REQ_STATE_BUSY;
+                User_Req[counter].type = REQ_TYPE_WRITE;
+                User_Req[counter].CB = CB;
+                User_Req[counter].data.write.xpos = xpos;
+                User_Req[counter].data.write.ypos = ypos;
+                is_Registered = 1;
+            }
         }
+
+        if(is_Registered == 0)
+        {
+            LCD_errorStatus = LCD_NO_OF_REQ_EXCEEDED;
+        }
+
     }
     return LCD_errorStatus;
 }
@@ -265,16 +312,10 @@ void LCD_init(void)
     static uint8_t LCD_init_state = LCD_INIT_STATE_POWER_ON;
     static uint8_t time = 0;
     time++;
-    static uint8_t init_flag = 0;
     switch (LCD_init_state)
     {
         
-    case LCD_INIT_STATE_POWER_ON:
-        if(init_flag == 0)
-        {
-            LCD_GPIO_init();
-            init_flag = 1;
-        }       
+    case LCD_INIT_STATE_POWER_ON:     
         if(time == 50)
         {
             LCD_init_state = LCD_INIT_STATE_FUNCTIONAL_SET_1;
@@ -590,7 +631,7 @@ void LCD_writeProc(void)
 
     if (Pos_Flag == 0)
     {
-        if(write_process.cursorPos < User_Req.len) 
+        if(cursorPos < User_Req[Req_index].data.write.len) 
         {
             timer++; 
             switch(LCD_sendingState)
@@ -598,7 +639,7 @@ void LCD_writeProc(void)
                 case LCD_SendMOSTSIG:
                     if(timer == 1)
                     {
-                        LCD_ActionEnableHighMostSig(User_Req.s[write_process.cursorPos], LCD_INPUT_DATA);
+                        LCD_ActionEnableHighMostSig(User_Req[Req_index].data.write.s[cursorPos], LCD_INPUT_DATA);
                     }   
                     if(timer == 2)
                     {
@@ -608,7 +649,7 @@ void LCD_writeProc(void)
                 case LCD_SENDLEASTSIG:
                     if(timer == 3)
                     {
-                        LCD_ActionEnableHighLeastSig(User_Req.s[write_process.cursorPos]);
+                        LCD_ActionEnableHighLeastSig(User_Req[Req_index].data.write.s[cursorPos]);
                     }
                     
                     if(timer == 4)
@@ -624,7 +665,7 @@ void LCD_writeProc(void)
                     if(timer == 6)
                     {
                         LCD_sendingState = LCD_SendMOSTSIG;
-                        write_process.cursorPos++;
+                        cursorPos++;
                         timer = 0;
                     }
                     break;
@@ -634,17 +675,28 @@ void LCD_writeProc(void)
             }
         }
 
-        if(write_process.cursorPos == User_Req.len)
+        if(cursorPos == User_Req[Req_index].data.write.len)
         {
-            User_Req.type = REQ_TYPE_NOREQ;
-            User_Req.state = REQ_STATE_READY;
-            if(write_process.CB)
+            User_Req[Req_index].type = REQ_TYPE_NOREQ;
+            User_Req[Req_index].state = REQ_STATE_READY;
+            if(User_Req[Req_index].CB)
             {
-                write_process.CB();
+                User_Req[Req_index].CB();
             }
+            cursorPos =0;
+            Req_index++;
+            if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
+            {
+                Req_index = 0;
+            }
+            else
+            {
+
+            }
+            
         }
     }
-    if(timer == 0 && write_process.cursorPos == 0)
+    if(timer == 0 && cursorPos == 0)
     {
         LCD_setPosProc();
     }
@@ -716,11 +768,20 @@ void LCD_clearProc(void)
     case LCD_INIT_STATE_END:
         time = 0;
         LCD_clearState =LCD_INIT_STATE_DISPLAY_CLEAR_1;
-        User_Req.type = REQ_TYPE_NOREQ;
-        User_Req.state = REQ_STATE_READY;
-        if(write_process.CB)
+        User_Req[Req_index].type = REQ_TYPE_NOREQ;
+        User_Req[Req_index].state = REQ_STATE_READY;
+        if(User_Req[Req_index].CB)
         {
-            write_process.CB();
+            User_Req[Req_index].CB();
+        }
+        Req_index++;
+        if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
+        {
+            Req_index = 0;
+        }
+        else
+        {
+
         }
         break;
     }
@@ -733,58 +794,137 @@ void LCD_setPosProc(void)
     static uint8_t timer = 0;
     timer++;
     static uint8_t LCD_setPosState = LCD_SendMOSTSIG;
-    if(User_Req.xpos == 0)
+    if(User_Req[Req_index].type == REQ_TYPE_SET_POS)
     {
-        LOC_var = User_Req.ypos;
-    }
-    else if(User_Req.xpos == 1)
-    {
-        LOC_var = User_Req.ypos + 0x40 ;
-    }
-    switch(LCD_setPosState)
-    {
-        case LCD_SendMOSTSIG:
-            Pos_Flag = 1;
-            if(timer == 1)
-            {
-                LCD_ActionEnableHighMostSig((LOC_var+128), LCD_INPUT_COMMAND);
-            }
-            
-            if(timer == 2)
-            {
-                LCD_setPosState = LCD_SENDLEASTSIG;
-            }
-            break;
-        case LCD_SENDLEASTSIG:
-            if(timer == 3)
-            {
-                LCD_ActionEnableHighLeastSig((LOC_var+128));
-            }     
-            if(timer == 4)
-            {
-                LCD_setPosState = LCD_SENDENLOW;
-            }
-            break;
-        case LCD_SENDENLOW:
-            if(timer == 5)
-            {
-                LCD_ActionEnableLow();
-            }     
-            if(timer == 6)
-            {
-                LCD_setPosState = LCD_SendMOSTSIG;
-                timer = 0;
-                //User_Req.state = REQ_STATE_READY;
-                //User_Req.type = REQ_TYPE_NOREQ;
-                Pos_Flag = 0;
-                if(write_process.CB)
+        if(User_Req[Req_index].data.moveCursor.xpos == 0)
+        {
+            LOC_var = User_Req[Req_index].data.moveCursor.ypos;
+        }
+        else if(User_Req[Req_index].data.moveCursor.xpos == 1)
+        {
+            LOC_var = User_Req[Req_index].data.moveCursor.ypos + 0x40 ;
+        }
+        switch(LCD_setPosState)
+        {
+            case LCD_SendMOSTSIG:
+                Pos_Flag = 1;
+                if(timer == 1)
                 {
-                    write_process.CB();
+                    LCD_ActionEnableHighMostSig((LOC_var+128), LCD_INPUT_COMMAND);
                 }
-            }
-            break;
-        default:
-            break;
-            
+                
+                if(timer == 2)
+                {
+                    LCD_setPosState = LCD_SENDLEASTSIG;
+                }
+                break;
+            case LCD_SENDLEASTSIG:
+                if(timer == 3)
+                {
+                    LCD_ActionEnableHighLeastSig((LOC_var+128));
+                }     
+                if(timer == 4)
+                {
+                    LCD_setPosState = LCD_SENDENLOW;
+                }
+                break;
+            case LCD_SENDENLOW:
+                if(timer == 5)
+                {
+                    LCD_ActionEnableLow();
+                }     
+                if(timer == 6)
+                {
+                    LCD_setPosState = LCD_SendMOSTSIG;
+                    timer = 0;
+                    //User_Req.state = REQ_STATE_READY;
+                    //User_Req.type = REQ_TYPE_NOREQ;
+                    Pos_Flag = 0;
+                    if(User_Req[Req_index].CB)
+                    {
+                        User_Req[Req_index].CB();
+                    }
+                    Req_index++;
+                    if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
+                    {
+                        Req_index = 0;
+                    }
+                    else
+                    {
+
+                    }
+                }
+                break;
+            default:
+                break;
+                
+        }
     }
+    else if(User_Req[Req_index].type == REQ_TYPE_WRITE)
+    {
+        if(User_Req[Req_index].data.write.xpos == 0)
+        {
+            LOC_var = User_Req[Req_index].data.write.ypos;
+        }
+        else if(User_Req[Req_index].data.write.xpos == 1)
+        {
+            LOC_var = User_Req[Req_index].data.write.ypos + 0x40 ;
+        }
+        switch(LCD_setPosState)
+        {
+            case LCD_SendMOSTSIG:
+                Pos_Flag = 1;
+                if(timer == 1)
+                {
+                    LCD_ActionEnableHighMostSig((LOC_var+128), LCD_INPUT_COMMAND);
+                }
+                
+                if(timer == 2)
+                {
+                    LCD_setPosState = LCD_SENDLEASTSIG;
+                }
+                break;
+            case LCD_SENDLEASTSIG:
+                if(timer == 3)
+                {
+                    LCD_ActionEnableHighLeastSig((LOC_var+128));
+                }     
+                if(timer == 4)
+                {
+                    LCD_setPosState = LCD_SENDENLOW;
+                }
+                break;
+            case LCD_SENDENLOW:
+                if(timer == 5)
+                {
+                    LCD_ActionEnableLow();
+                }     
+                if(timer == 6)
+                {
+                    LCD_setPosState = LCD_SendMOSTSIG;
+                    timer = 0;
+                    //User_Req.state = REQ_STATE_READY;
+                    //User_Req.type = REQ_TYPE_NOREQ;
+                    Pos_Flag = 0;
+                    if(User_Req[Req_index].CB)
+                    {
+                        User_Req[Req_index].CB();
+                    }
+                    // Req_index++;
+                    // if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
+                    // {
+                    //     Req_index = 0;
+                    // }
+                    // else
+                    // {
+
+                    // }
+                }
+                break;
+            default:
+                break;
+                
+        }        
+    }
+
 }

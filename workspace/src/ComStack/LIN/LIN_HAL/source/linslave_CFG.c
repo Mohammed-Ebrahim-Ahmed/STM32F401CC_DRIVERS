@@ -6,48 +6,11 @@
 message_t messages_FIRST;
 message_t messages_SECOND;
 
-signal_t signal_first [2] = {
-  [0] = {
-        .idx = 0,
-        .len = 8,
-        .mes = &messages_FIRST
-        },
-  [1] = {
-        .idx = 1,
-        .len = 8,
-        .mes = &messages_FIRST
-        }
-};
+extern signal_t signal_first [2];
 
-signal_t signal_second [2] = {
-  [0] = {
-        .idx = 0,
-        .len = 8,
-        .mes = &messages_SECOND
-        },
-  [1] = {
-        .idx = 1,
-        .len = 8,
-        .mes = &messages_SECOND
-        }
-};
+extern signal_t signal_second [2];
 
-LIN_UART_t LIN_UART = {
-  .baudrate = 9600,
-  .oversampling = OVERSAMPLING_16,
-  .stopBits = ONE_STOP_BIT,
-  .wordLength = WORDLENGTH_8BITS,
-  .UART_NO = UART1,
-  .RxUart_pin = {.Mode = GPIO_AF_PP,
-                 .Port = GPIO_PORTB,
-                 .Pin = GPIO_PIN7,
-                 .Speed = GPIO_SPEED_HIGH },
-
-    .TxUart_pin = {.Mode = GPIO_AF_PP,
-                 .Port = GPIO_PORTB,
-                 .Pin = GPIO_PIN6,
-                 .Speed = GPIO_SPEED_HIGH },
-};
+extern LIN_UART_t LIN_UART ;
 
 message_t messages [NUM_OF_MESSAGES] = {
   [0] = {

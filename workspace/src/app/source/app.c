@@ -8,7 +8,8 @@ void Dummy_runnable (void)
     static uint8_t time = 0;
     if(time ==0)
     {
-        LCD_writeString((uint8_t *)"Ahmed",5,1,3,&MoreDummy);
+        LCD_writeReq((uint8_t *)"Ahmed",5,1,3,&MoreDummy);
+        LCD_writeReq((uint8_t *)"Mohsen",6,0,13,&MoreDummy);
     }
     else if (time == 5)
     {
