@@ -24,7 +24,8 @@ typedef enum{
     LCD_WrongYpos,
     LCD_Ok,
     LCD_NotOk,
-    LCD_NO_OF_REQ_EXCEEDED
+    LCD_NO_OF_REQ_EXCEEDED,
+    LCD_WrongCommand
 }LCD_errorStatus_t;
 
 typedef struct
@@ -45,4 +46,5 @@ LCD_errorStatus_t LCD_writeReq( uint8_t* string, uint8_t length, uint8_t xpos, u
 void LCD_Task(void);
 LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB);
 void LCD_GPIO_init(void);
+LCD_errorStatus_t LCD_CommandReq(uint8_t command, CB_t CB);
 #endif // HAL_INCLUDE_LCD_H_

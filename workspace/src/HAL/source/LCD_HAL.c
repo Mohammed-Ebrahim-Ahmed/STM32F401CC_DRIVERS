@@ -20,7 +20,8 @@
 #define REQ_TYPE_WRITE   0
 #define REQ_TYPE_CLEAR   1
 #define REQ_TYPE_SET_POS 2
-#define REQ_TYPE_NOREQ   3
+#define REQ_TYPE_COMMAND 3
+#define REQ_TYPE_NOREQ   4
 
 #define REQ_STATE_BUSY  1
 #define REQ_STATE_READY 0
@@ -72,6 +73,9 @@ typedef struct {
             volatile uint8_t xpos;
             volatile uint8_t ypos;
         } moveCursor;
+        struct{
+            volatile uint8_t commandLCD;
+        }command;
         // Add more request types as needed
     } data;
 } User_Req_t;
@@ -114,6 +118,7 @@ static void LCD_writeInitCommand (uint8_t command);
 static void LCD_ActionEnableHighMostSig(uint8_t input, uint8_t type);
 static void LCD_ActionEnableHighLeastSig(uint8_t input);
 static void LCD_ActionEnableLow (void);
+static void LCD_DoCommand(void);
 // static void LCD_writeCommand(uint8_t command);
 // static void LCD_writeData(uint8_t data);
 // static void LCD_write(uint8_t type, uint8_t input);
@@ -124,7 +129,6 @@ static void LCD_ActionEnableLow (void);
 
 void LCD_TASK(void)
 {
-    uint8_t i = 0;
     if(GLOBAL_LCD_STATE == INIT_STATE)
     {
         LCD_init();
@@ -144,6 +148,9 @@ void LCD_TASK(void)
                     break;
                 case REQ_TYPE_SET_POS:
                     LCD_setPosProc();
+                    break;
+                case REQ_TYPE_COMMAND:
+                    LCD_DoCommand();
                     break;
                 case REQ_TYPE_NOREQ:
                     break;
@@ -290,10 +297,48 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
             if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
             {
                 User_Req[counter].state = REQ_STATE_BUSY;
-                User_Req[counter].type = REQ_TYPE_WRITE;
+                User_Req[counter].type = REQ_TYPE_SET_POS;
                 User_Req[counter].CB = CB;
                 User_Req[counter].data.write.xpos = xpos;
                 User_Req[counter].data.write.ypos = ypos;
+                is_Registered = 1;
+            }
+        }
+
+        if(is_Registered == 0)
+        {
+            LCD_errorStatus = LCD_NO_OF_REQ_EXCEEDED;
+        }
+
+    }
+    return LCD_errorStatus;
+}
+
+LCD_errorStatus_t LCD_CommandReq(uint8_t command, CB_t CB)
+{
+    LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
+    uint8_t counter = 0;
+    uint8_t is_Registered = 0;
+    if(command < 0)
+    {
+        LCD_errorStatus = LCD_WrongXpos;
+    }
+    else if(CB == NULL)
+    {
+        LCD_errorStatus = LCD_NullPtr;
+    }
+    else
+    {
+        LCD_errorStatus = LCD_Ok;
+
+        for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
+        {
+            if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
+            {
+                User_Req[counter].state = REQ_STATE_BUSY;
+                User_Req[counter].type = REQ_TYPE_COMMAND;
+                User_Req[counter].CB = CB;
+                User_Req[counter].data.command.commandLCD = command;
                 is_Registered = 1;
             }
         }
@@ -456,6 +501,68 @@ void LCD_writeInitCommand(uint8_t command)
         }
         
     }
+}
+
+void LCD_DoCommand()
+{
+    static uint8_t timer = 0;
+    timer++;
+    static uint8_t LCD_setPosState = LCD_SendMOSTSIG;
+        switch(LCD_setPosState)
+        {
+            case LCD_SendMOSTSIG:
+                if(timer == 1)
+                {
+                    LCD_ActionEnableHighMostSig(User_Req[Req_index].data.command.commandLCD, LCD_INPUT_COMMAND);
+                }
+                
+                if(timer == 2)
+                {
+                    LCD_setPosState = LCD_SENDLEASTSIG;
+                }
+                break;
+            case LCD_SENDLEASTSIG:
+                if(timer == 3)
+                {
+                    LCD_ActionEnableHighLeastSig(User_Req[Req_index].data.command.commandLCD);
+                }     
+                if(timer == 4)
+                {
+                    LCD_setPosState = LCD_SENDENLOW;
+                }
+                break;
+            case LCD_SENDENLOW:
+                if(timer == 5)
+                {
+                    LCD_ActionEnableLow();
+                }     
+                if(timer == 6)
+                {
+                    LCD_setPosState = LCD_SendMOSTSIG;
+                    timer = 0;
+                    User_Req[Req_index].state = REQ_STATE_READY;
+                    User_Req[Req_index].type = REQ_TYPE_NOREQ;
+                    if(User_Req[Req_index].CB)
+                    {
+                        User_Req[Req_index].CB();
+                    }
+                    Req_index++;
+                    if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
+                    {
+                        Req_index = 0;
+                    }
+                    else
+                    {
+
+                    }
+                }
+                break;
+            default:
+                break;
+                
+        }
+
+
 }
 
 // void LCD_writeCommand(uint8_t command)
