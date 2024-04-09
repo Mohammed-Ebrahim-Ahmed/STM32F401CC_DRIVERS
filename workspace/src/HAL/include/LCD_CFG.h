@@ -1,14 +1,17 @@
 #ifndef HAL_INCLUDE_LCD_CFG_H_
 #define HAL_INCLUDE_LCD_CFG_H_
 
+//do not change these values!!!! 
+#define  FOUR_BIT_MODE 7
+#define EIGHT_BIT_MODE 11
 
-// please choose FOUR_BIT_MODE --> 7 or EIGHT_BIT_MODE ---> 11
-#define LCD_MODE 7
+// please choose FOUR_BIT_MODE or EIGHT_BIT_MODE
+#define LCD_MODE EIGHT_BIT_MODE
 
 #define LCD_XDIMSION 2
 #define LCD_YDIMSION 16 
 
-#if LCD_MODE == 11
+#if LCD_MODE == EIGHT_BIT_MODE
 
     #define FUNCTION_SET 0x38
 
@@ -39,7 +42,7 @@
      */
     #define ENTRY_MODE_SET 0x06
 
-#elif LCD_MODE == 7
+#elif LCD_MODE == FOUR_BIT_MODE
 
     #define FUNCTION_SET_1 0x20
     #define FUNCTION_SET_2 0x20
@@ -74,7 +77,8 @@
      * 
      */
     #define ENTRY_MODE_SET_2 0x60
-
+    
+    // note these send by normal command not init command
 	#define SHIFT_LEFT 0x18
 	
 	#define SHIFT_RIGHT 0x1c

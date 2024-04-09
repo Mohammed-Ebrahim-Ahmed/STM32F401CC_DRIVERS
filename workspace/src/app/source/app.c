@@ -14,7 +14,7 @@ void Dummy_runnable (void)
     else if (time == 5)
     {
         // LCD_clearScreen(&MoreDummy);
-        LCD_CommandReq(SHIFT_LEFT,&MoreDummy);
+        LCD_CommandReq(0x18,&MoreDummy);
     }
     time++;
 }
