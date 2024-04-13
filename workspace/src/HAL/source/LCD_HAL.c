@@ -73,7 +73,7 @@
 
 
 // the number of requests the user can use
-#define NUM_OF_REQUESTS  5
+#define NUM_OF_REQUESTS  200
 
 /********************************************************************************************************/
 /************************************************Types***************************************************/
@@ -86,7 +86,7 @@ typedef struct {
     CB_t CB;
     union {
         struct {
-            uint8_t* s;
+            volatile uint8_t* s;
             volatile uint8_t len;
             volatile uint8_t xpos;
             volatile uint8_t ypos;
@@ -111,13 +111,7 @@ volatile static uint8_t GLOBAL_LCD_STATE = INIT_STATE;
 //makeing this request as an array
 
 
-User_Req_t User_Req [NUM_OF_REQUESTS] = {
-    [0] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
-    [1] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
-    [2] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
-    [3] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
-    [4] = {.state = REQ_STATE_READY, .type = REQ_TYPE_NOREQ},
-};
+User_Req_t volatile User_Req [NUM_OF_REQUESTS];
 
 
 
@@ -147,7 +141,7 @@ static void LCD_ActionEnableLow (void);
 
 #elif LCD_MODE == EIGHT_BIT_MODE
 
-   void LCD_writeCommandData (uint8_t input, uint8_t type);
+void LCD_writeCommandData(volatile uint8_t input,volatile uint8_t type);
 
 #else
 
@@ -208,6 +202,8 @@ LCD_errorStatus_t LCD_writeReq( uint8_t* string, uint8_t length, uint8_t xpos, u
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
     uint8_t counter = 0;
     uint8_t is_Registered = 0;
+    static int Req_count = 0;
+    Req_count++;
     if(string == NULL)
     {
         LCD_errorStatus = LCD_NullPtr;
@@ -224,10 +220,10 @@ LCD_errorStatus_t LCD_writeReq( uint8_t* string, uint8_t length, uint8_t xpos, u
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
-    else if(CB == NULL)
-    {
-        LCD_errorStatus = LCD_NullPtr;        
-    }
+    // else if(CB == NULL)
+    // {
+    //     LCD_errorStatus = LCD_NullPtr;        
+    // }
     else
     {
         LCD_errorStatus = LCD_Ok;
@@ -259,15 +255,15 @@ LCD_errorStatus_t LCD_getState(uint8_t* LCD_state)
 {
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
 
-    if(LCD_state == NULL)
-    {
-        LCD_errorStatus = LCD_NullPtr;
-    }
-    else
-    {
+    // if(LCD_state == NULL)
+    // {
+    //     LCD_errorStatus = LCD_NullPtr;
+    // }
+    // else
+    // {
         LCD_errorStatus = LCD_Ok;
         *LCD_state = GLOBAL_LCD_STATE;
-    }
+    // }
     return LCD_errorStatus;
 }
 
@@ -276,12 +272,12 @@ LCD_errorStatus_t LCD_clearScreen(CB_t CB)
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
     uint8_t counter = 0;    
     uint8_t is_Registered = 0;
-    if(CB == NULL)
-    {
-        LCD_errorStatus = LCD_NullPtr;
-    }
-    else
-    {
+    // if(CB == NULL)
+    // {
+    //     LCD_errorStatus = LCD_NullPtr;
+    // }
+    // else
+    // {
         LCD_errorStatus = LCD_Ok;
 
         for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
@@ -300,7 +296,7 @@ LCD_errorStatus_t LCD_clearScreen(CB_t CB)
             LCD_errorStatus = LCD_NO_OF_REQ_EXCEEDED;
         }
 
-    }
+    // }
     return LCD_errorStatus;
 }
 
@@ -317,10 +313,10 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
-    else if(CB == NULL)
-    {
-        LCD_errorStatus = LCD_NullPtr;
-    }
+    // else if(CB == NULL)
+    // {
+    //     LCD_errorStatus = LCD_NullPtr;
+    // }
     else
     {
         LCD_errorStatus = LCD_Ok;
@@ -332,8 +328,8 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
                 User_Req[counter].state = REQ_STATE_BUSY;
                 User_Req[counter].type = REQ_TYPE_SET_POS;
                 User_Req[counter].CB = CB;
-                User_Req[counter].data.write.xpos = xpos;
-                User_Req[counter].data.write.ypos = ypos;
+                User_Req[counter].data.moveCursor.xpos = xpos;
+                User_Req[counter].data.moveCursor.ypos = ypos;
                 is_Registered = 1;
             }
         }
@@ -356,10 +352,10 @@ LCD_errorStatus_t LCD_CommandReq(uint8_t command, CB_t CB)
     {
         LCD_errorStatus = LCD_WrongXpos;
     }
-    else if(CB == NULL)
-    {
-        LCD_errorStatus = LCD_NullPtr;
-    }
+    // else if(CB == NULL)
+    // {
+    //     LCD_errorStatus = LCD_NullPtr;
+    // }
     else
     {
         LCD_errorStatus = LCD_Ok;
@@ -390,6 +386,7 @@ void LCD_init(void)
     static uint8_t LCD_init_state = LCD_INIT_STATE_POWER_ON;
     static uint8_t time = 0;
     time++;
+    uint16_t i = 0;
     #if LCD_MODE == FOUR_BIT_MODE
         switch (LCD_init_state)
         {
@@ -471,6 +468,11 @@ void LCD_init(void)
         case LCD_INIT_STATE_END:
             GLOBAL_LCD_STATE = OPERATION_STATE;
             time = 0;
+            for(i = 0; i < NUM_OF_REQUESTS; i++)
+            {
+                User_Req[i].state = REQ_STATE_READY;
+                User_Req[i].type = REQ_TYPE_NOREQ;
+            }
             break;
 
         default:
@@ -519,6 +521,11 @@ void LCD_init(void)
         case LCD_INIT_STATE_END:
             GLOBAL_LCD_STATE = OPERATION_STATE;
             time = 0;
+            for(i = 0; i < NUM_OF_REQUESTS; i++)
+            {
+                User_Req[i].state = REQ_STATE_READY;
+                User_Req[i].type = REQ_TYPE_NOREQ;
+            }
             break;
         default:
             break;
@@ -622,11 +629,11 @@ void LCD_ActionEnableLow(void)
 }
 #elif LCD_MODE == EIGHT_BIT_MODE
 
-void LCD_writeCommandData(uint8_t input, uint8_t type)
+void LCD_writeCommandData(volatile uint8_t input,volatile uint8_t type)
 {
-    static uint8_t counter = 0;
+    static volatile uint8_t countercommand = 0;
         
-    if (counter == 0)
+    if (countercommand == 0)
     {
         GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RS], LCD_Connection.LCD_DataPin[RS], type);
         GPIO_SetPinValue(LCD_Connection.LCD_DataPort[RW], LCD_Connection.LCD_DataPin[RW], GPIO_SET_PIN_LOW);
@@ -640,15 +647,15 @@ void LCD_writeCommandData(uint8_t input, uint8_t type)
         GPIO_SetPinValue(LCD_Connection.LCD_DataPort[10], LCD_Connection.LCD_DataPin[10], ( (input>>7) & 1));
         GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_HIGH);                   
     }
-    if(counter == 2)
+    if(countercommand == 2)
     {
         GPIO_SetPinValue(LCD_Connection.LCD_DataPort[EN], LCD_Connection.LCD_DataPin[EN],GPIO_SET_PIN_LOW);
     }
-    counter++;
+    countercommand++;
     
-    if(counter == 3)
+    if(countercommand == 3)
     {
-        counter = 0;
+        countercommand = 0;
     }
         
 }
@@ -893,7 +900,7 @@ void LCD_writeProc(void)
     //     }
     // }
     static uint8_t timer = 0;
-
+    uint8_t req_finished = 0;
     #if LCD_MODE == FOUR_BIT_MODE
         static uint8_t LCD_sendingState = LCD_SendMOSTSIG;
 
@@ -1007,6 +1014,8 @@ void LCD_writeProc(void)
                 }
                 cursorPos =0;
                 Req_index++;
+                Pos_Flag = 2;
+                req_finished = 1;
                 if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
                 {
                     Req_index = 0;
@@ -1018,10 +1027,11 @@ void LCD_writeProc(void)
                 
             }
         }
-        if(timer == 0 && cursorPos == 0)
+        if(timer == 0 && cursorPos == 0 && req_finished != 1)
         {
             LCD_setPosProc();
         }
+        req_finished = 0;
     #else
 
     #endif
@@ -1120,14 +1130,14 @@ void LCD_clearProc(void)
     {
     case LCD_INIT_STATE_DISPLAY_CLEAR:
         LCD_writeCommandData(DISPLAY_CLEAR, LCD_INPUT_COMMAND);
-        if(time == 2)
+        if(time == 3)
         {
             LCD_clearState =LCD_INIT_STATE_ENTRY_MODE_SET;
         }
         break;
     case LCD_INIT_STATE_ENTRY_MODE_SET:
         LCD_writeCommandData(ENTRY_MODE_SET, LCD_INPUT_COMMAND);
-        if(time == 4)
+        if(time == 6)
         {
             LCD_clearState =LCD_INIT_STATE_END;
         }
@@ -1209,8 +1219,8 @@ void LCD_setPosProc(void)
                 {
                     LCD_setPosState = LCD_SendMOSTSIG;
                     timer = 0;
-                    //User_Req.state = REQ_STATE_READY;
-                    //User_Req.type = REQ_TYPE_NOREQ;
+                    User_Req[Req_index].state = REQ_STATE_READY;
+                    User_Req[Req_index].type = REQ_TYPE_NOREQ;
                     Pos_Flag = 0;
                     if(User_Req[Req_index].CB)
                     {
@@ -1326,8 +1336,8 @@ void LCD_setPosProc(void)
 
                     LCD_setPosState = LCD_SEND_COMMAND_DATA;
                     timer = 0;
-                    //User_Req.state = REQ_STATE_READY;
-                    //User_Req.type = REQ_TYPE_NOREQ;
+                    User_Req[Req_index].state = REQ_STATE_READY;
+                    User_Req[Req_index].type = REQ_TYPE_NOREQ;
                     Pos_Flag = 0;
                     if(User_Req[Req_index].CB)
                     {
@@ -1375,10 +1385,10 @@ void LCD_setPosProc(void)
                     //User_Req.state = REQ_STATE_READY;
                     //User_Req.type = REQ_TYPE_NOREQ;
                     Pos_Flag = 0;
-                    if(User_Req[Req_index].CB)
-                    {
-                        User_Req[Req_index].CB();
-                    }
+                    // if(User_Req[Req_index].CB)
+                    // {
+                    //     User_Req[Req_index].CB();
+                    // }
                     // Req_index++;
                     // if(Req_index == NUM_OF_REQUESTS || User_Req[Req_index].state == REQ_STATE_READY)
                     // {
