@@ -13,44 +13,53 @@ extern Runnable displayControl;
 extern Runnable EditTimeModeSM;
 extern Runnable readSwitches;
 extern Runnable stopWatch;
+extern Runnable Keypad_Runnable;
 
 const Runnable_USER_t Runnable_User [_RUNNABLE_NO] =
-{   [Runnable_0] = {
-        .Name = "readSwitches",
+{   
+    [Runnable_0] = {
+        .Name = "Keypad_Runnable",
         .Priority = 0,
-        .Periodicity = 60,
-        .CB = (Runnable)&readSwitches,
+        .Periodicity = 6,
+        .CB = (Runnable)&Keypad_Runnable,
         .First_Delay = 0
     },
     [Runnable_1] = {
+        .Name = "readSwitches",
+        .Priority = 0,
+        .Periodicity = 30,
+        .CB = (Runnable)&readSwitches,
+        .First_Delay = 30
+    },
+    [Runnable_2] = {
         .Name = "LCD_TASK",
         .Priority = 0,
         .Periodicity = 1,
         .CB = (Runnable)&LCD_TASK,
         .First_Delay = 0
     },
-    [Runnable_2] = {
+    [Runnable_3] = {
         .Name = "DateTime",
         .Priority = 0,
         .Periodicity = 100,
         .CB = (Runnable)&DateTime,
         .First_Delay = 200
     },
-    [Runnable_3] = {
+    [Runnable_4] = {
         .Name = "EditTimeModeSM",
         .Priority = 0,
         .Periodicity = 100,
         .CB = (Runnable)&EditTimeModeSM,
         .First_Delay = 200
     },
-    [Runnable_4] = {
+    [Runnable_5] = {
         .Name = "StopWatch",
         .Priority = 0,
         .Periodicity = 100,
         .CB = (Runnable)&stopWatch,
         .First_Delay = 200
     },
-    [Runnable_5] = {
+    [Runnable_6] = {
         .Name = "displayControl",
         .Priority = 0,
         .Periodicity = 100,
