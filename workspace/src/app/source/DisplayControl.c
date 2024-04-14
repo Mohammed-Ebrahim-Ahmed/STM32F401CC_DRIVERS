@@ -26,7 +26,7 @@
 /********************************************************************************************************/
 #define EDIT_MASK           0x0040
 #define MODE_MASK           0x0080
-#define OK_MASK             0x1000
+#define OK_MASK             0x100
 #define HOUR2_MASK          0x0040
 
 /********************************************************************************************************/
@@ -76,6 +76,19 @@ volatile uint8_t temp1[13];
 volatile uint8_t temp2[11]; 
 volatile uint8_t temp3[13];
 volatile uint8_t temp4[13];
+volatile uint8_t EDIT_DIGIT_FLAG = 1;
+enum Editstates{
+    Edit_Mode,
+    Edit_Digit,
+};
+
+
+volatile uint8_t Edit_state = Edit_Mode;
+extern volatile uint8_t validCursorPos;
+extern void trackCursor(void);
+extern void validateCursorPos(uint8_t x_pos , uint8_t y_pos);
+extern void CopyTime (volatile uint16_t* srcTime,volatile uint16_t* destTime);
+extern void EditTime (void);
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
@@ -171,6 +184,10 @@ void displayControl (void)
                 LCD_clearScreen(NULL);
                 displayState = EditTimeMode;
                 //Switches_Status &= ~EDIT_MASK; We don't need this line
+                CopyTime(Time,(uint16_t *)EditedTime);     
+                LCD_setCursorPosition(1,2, NULL);   
+                DisplayEditedTime();        
+                LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
             }
             else if(Switches_Status & MODE_MASK)
             {
@@ -192,15 +209,32 @@ void displayControl (void)
             }
         break;
         case EditTimeMode:
-            LCD_clearScreen(NULL);
-            LCD_clearScreen(NULL);
-            DisplayEditedTime();
-            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
-            if(Switches_Status & OK_MASK)
+
+            switch(Edit_state)
+            {
+                case Edit_Mode:
+                    trackCursor();
+                    validateCursorPos(cursor_pos[x_pos],cursor_pos[y_pos]);
+                    if((Switches_Status & EDIT_MASK) && validCursorPos)
+                    {
+                        Edit_state = Edit_Digit;
+                    }
+                    break;
+                case Edit_Digit:
+                    EditTime();
+                    if(Switches_Status & OK_MASK)
+                    {  
+                        Edit_state = Edit_Mode;
+                        EDIT_DIGIT_FLAG = 1;
+                    }
+                    break;
+            }
+            if((Switches_Status & OK_MASK) && !EDIT_DIGIT_FLAG)
             {
                 LCD_clearScreen(NULL);
                 displayState = DateTimeMode;
             }
+            EDIT_DIGIT_FLAG = 0;
         break;
     }
 }

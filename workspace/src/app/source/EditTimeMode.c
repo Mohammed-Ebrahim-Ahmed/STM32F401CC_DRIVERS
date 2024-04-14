@@ -19,6 +19,9 @@
 /********************************************************************************************************/
 /************************************************Defines*************************************************/
 /********************************************************************************************************/
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 #define DATE_POS_Y          0
 #define DAY2_POS_X          3
 #define DAY1_POS_X          4
@@ -56,10 +59,10 @@ enum cursorPos{
 /********************************************************************************************************/
 /************************************************Types***************************************************/
 /********************************************************************************************************/
-enum states{
-    Edit_Mode,
-    Edit_Digit,
-};
+// enum states{
+//     Edit_Mode,
+//     Edit_Digit,
+// };
 
 
 
@@ -80,8 +83,8 @@ enum time {
 volatile uint8_t Valid_X_Pos_Values[6] = {HOUR2_POS_X,HOUR1_POS_X,MINUTES2_POS_X,MINUTES1_POS_X,SECONDS2_POS_X,SECONDS1_POS_X};
 
 volatile int8_t cursor_pos[2] = {
-    [x_pos] = 0,
-    [y_pos] = 0,
+    [x_pos] = 2,
+    [y_pos] = 1,
 };
 
 volatile uint16_t EditedTime[7]={
@@ -94,16 +97,16 @@ volatile uint16_t EditedTime[7]={
     [hour2] = 0,
 };
 
-volatile uint8_t Edit_state = Edit_Mode;
-static volatile uint8_t validCursorPos = 0;
+//volatile uint8_t Edit_state = Edit_Mode;
+volatile uint8_t validCursorPos = 0;
 extern volatile uint16_t Switches_Status;
 extern volatile uint16_t Time[7];
 volatile uint8_t EditDigit_Flag = 0;
-
+extern volatile uint8_t temp4[13];
 /********************************************************************************************************/
 /*****************************************Static Functions Prototype*************************************/
 /********************************************************************************************************/
-static void trackCursor(void)
+void trackCursor(void)
 {
     if(Switches_Status & UP_MASK)
     {
@@ -112,6 +115,7 @@ static void trackCursor(void)
         {
             cursor_pos[y_pos] = 1;
         }
+        LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
     }
     else if(Switches_Status & DOWN_MASK)
     {
@@ -120,6 +124,7 @@ static void trackCursor(void)
         {
             cursor_pos[y_pos] = 0;
         }
+        LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
     }
     else if(Switches_Status & LEFT_MASK)
     {
@@ -128,6 +133,7 @@ static void trackCursor(void)
         {
             cursor_pos[x_pos] = 15;
         }
+        LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
     }
     else if(Switches_Status & RIGHT_MASK)
     {
@@ -136,10 +142,12 @@ static void trackCursor(void)
         {
             cursor_pos[x_pos] = 0;
         }
+        LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
     }
+    
 }
 
-static void validateCursorPos(uint8_t x_pos , uint8_t y_pos)
+void validateCursorPos(uint8_t x_pos , uint8_t y_pos)
 {
     uint8_t iterator = 0;
     uint8_t valid_y_pos = 0;
@@ -167,7 +175,7 @@ static void validateCursorPos(uint8_t x_pos , uint8_t y_pos)
     validCursorPos = valid_y_pos & valid_x_pos;
 }
 
-static void CopyTime (volatile uint16_t* srcTime,volatile uint16_t* destTime)
+void CopyTime (volatile uint16_t* srcTime,volatile uint16_t* destTime)
 {
     uint8_t idx = 0;
     for(idx = 0; idx < 7; idx++)
@@ -176,7 +184,7 @@ static void CopyTime (volatile uint16_t* srcTime,volatile uint16_t* destTime)
     }
 }
 
-static void EditTime (void)
+void EditTime (void)
 {
     if(cursor_pos[x_pos] == HOUR2_POS_X && cursor_pos[y_pos] == TIME_POS_Y )
     {
@@ -188,6 +196,8 @@ static void EditTime (void)
             {
                 EditedTime[hour2] = 0;
             }
+            temp4[0] = EditedTime[hour2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if(Switches_Status & DOWN_MASK)
         {
@@ -196,6 +206,8 @@ static void EditTime (void)
             {
                 EditedTime[hour2] = 2;
             }
+            temp4[0] = EditedTime[hour2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else{
             /*Do Nothing*/
@@ -211,6 +223,8 @@ static void EditTime (void)
             {
                 EditedTime[hour1] = 0;
             }
+            temp4[1] = EditedTime[hour1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -219,6 +233,8 @@ static void EditTime (void)
             {
                 EditedTime[hour1] = 9;
             }
+            temp4[1] = EditedTime[hour1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
     }
     else if (cursor_pos[x_pos] == MINUTES2_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -231,6 +247,8 @@ static void EditTime (void)
             {
                 EditedTime[min2] = 0;
             }
+            temp4[3] = EditedTime[min2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -239,6 +257,8 @@ static void EditTime (void)
             {
                 EditedTime[min2] = 5;
             }
+            temp4[3] = EditedTime[min2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
     }
     else if (cursor_pos[x_pos] == MINUTES1_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -251,6 +271,8 @@ static void EditTime (void)
             {
                 EditedTime[min1] = 0;
             }
+            temp4[4] = EditedTime[min1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -259,6 +281,8 @@ static void EditTime (void)
             {
                 EditedTime[min1] = 9;
             }
+            temp4[4] = EditedTime[min1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
 
     }
@@ -272,6 +296,8 @@ static void EditTime (void)
             {
                 EditedTime[sec2] = 0;
             }
+            temp4[6] = EditedTime[sec2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -280,6 +306,8 @@ static void EditTime (void)
             {
                 EditedTime[sec2] = 5;
             }
+            temp4[6] = EditedTime[sec2] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
     }
     else if (cursor_pos[x_pos] == SECONDS1_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -292,6 +320,8 @@ static void EditTime (void)
             {
                 EditedTime[sec1] = 0;
             }
+            temp4[7] = EditedTime[sec1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -300,6 +330,8 @@ static void EditTime (void)
             {
                 EditedTime[sec1] = 9;
             }
+            temp4[7] = EditedTime[sec1] + '0';
+            LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
         }
     }
     CopyTime((uint16_t *)EditedTime,Time);
@@ -309,28 +341,28 @@ static void EditTime (void)
 /*********************************************APIs Implementation****************************************/
 /********************************************************************************************************/
 
-void EditTimeModeSM(void)
-{
-    CopyTime(Time,(uint16_t *)EditedTime);
-    switch(Edit_state)
-    {
-        case Edit_Mode:
-            trackCursor();
-            validateCursorPos(cursor_pos[x_pos],cursor_pos[y_pos]);
-            if((Switches_Status & EDIT_MASK) && validCursorPos)
-            {
-                Edit_state = Edit_Digit;
-            }
-            break;
-        case Edit_Digit:
-            EditTime();
-            if(Switches_Status & OK_MASK)
-            {
-                Edit_state = Edit_Mode;
-            }
-            break;
-    }
-}
+// void EditTimeModeSM(void)
+// {
+//     CopyTime(Time,(uint16_t *)EditedTime);
+//     switch(Edit_state)
+//     {
+//         case Edit_Mode:
+//             trackCursor();
+//             validateCursorPos(cursor_pos[x_pos],cursor_pos[y_pos]);
+//             if((Switches_Status & EDIT_MASK) && validCursorPos)
+//             {
+//                 Edit_state = Edit_Digit;
+//             }
+//             break;
+//         case Edit_Digit:
+//             EditTime();
+//             if(Switches_Status & OK_MASK)
+//             {
+//                 Edit_state = Edit_Mode;
+//             }
+//             break;
+//     }
+// }
 #if 0
 switch(Edit_state)
     {

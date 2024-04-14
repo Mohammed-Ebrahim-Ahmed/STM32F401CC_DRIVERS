@@ -12,9 +12,8 @@ extern Runnable readSwitches;
 extern Runnable LCD_TASK;
 extern Runnable DateTime;
 extern Runnable displayControl;
-extern Runnable EditTimeModeSM;
 extern Runnable stopWatch;
-
+// extern Runnable EditTimeModeSM;
 
 const Runnable_USER_t Runnable_User [_RUNNABLE_NO] =
 {   
@@ -46,26 +45,27 @@ const Runnable_USER_t Runnable_User [_RUNNABLE_NO] =
         .CB = (Runnable)&DateTime,
         .First_Delay = 200
     },
+
     [Runnable_4] = {
-        .Name = "EditTimeModeSM",
-        .Priority = 0,
-        .Periodicity = 100,
-        .CB = (Runnable)&EditTimeModeSM,
-        .First_Delay = 200
-    },
-    [Runnable_5] = {
         .Name = "StopWatch",
         .Priority = 0,
         .Periodicity = 100,
         .CB = (Runnable)&stopWatch,
         .First_Delay = 200
     },
-    [Runnable_6] = {
+    [Runnable_5] = {
         .Name = "displayControl",
         .Priority = 0,
         .Periodicity = 100,
         .CB = (Runnable)&displayControl,
         .First_Delay = 200
     },
+    // [Runnable_6] = {
+    //     .Name = "EditTimeModeSM",
+    //     .Priority = 0,
+    //     .Periodicity = 100,
+    //     .CB = (Runnable)&EditTimeModeSM,
+    //     .First_Delay = 200
+    // },
 
 };

@@ -280,7 +280,7 @@ LCD_errorStatus_t LCD_clearScreen(CB_t CB)
     // {
         LCD_errorStatus = LCD_Ok;
 
-        for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
+        for(counter = 0; ((counter < NUM_OF_REQUESTS) && (!is_Registered)); counter++)
         {
             if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
             {
@@ -305,11 +305,11 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
     LCD_errorStatus_t LCD_errorStatus = LCD_NotOk;
     uint8_t counter = 0;
     uint8_t is_Registered = 0;
-    if(xpos <= 0)
+    if(xpos < 0)
     {
         LCD_errorStatus = LCD_WrongXpos;
     }
-    else if(ypos <= 0)
+    else if(ypos < 0)
     {
         LCD_errorStatus = LCD_WrongYpos;
     }
@@ -321,7 +321,7 @@ LCD_errorStatus_t LCD_setCursorPosition(uint8_t xpos , uint8_t ypos, CB_t CB)
     {
         LCD_errorStatus = LCD_Ok;
 
-        for(counter = 0; counter < (NUM_OF_REQUESTS && (!is_Registered)); counter++)
+        for(counter = 0; ((counter < NUM_OF_REQUESTS) && (!is_Registered)); counter++)
         {
             if(GLOBAL_LCD_STATE == OPERATION_STATE && User_Req[counter].state == REQ_STATE_READY)
             {

@@ -8,7 +8,7 @@ typedef enum{
     Runnable_3,
     Runnable_4,
     Runnable_5,
-    Runnable_6,
+    // Runnable_6,
     _RUNNABLE_NO
 }Runnable_item_t;
 
