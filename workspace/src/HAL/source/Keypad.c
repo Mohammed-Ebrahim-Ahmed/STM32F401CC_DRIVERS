@@ -82,7 +82,8 @@ KEYPAD_enumError_t KEYPAD_Init()
         loc_PORTstr.Pin = KEYPAD_strConfig.KEYPAD_strCOLS[loc_iterator].KEYPAD_enumPin;			/* Assign The Keypad Cols Pins to the Local Port Struct */
         loc_PORTstr.Mode = GPIO_OUT_PP;			
         loc_PORTstr.Speed = GPIO_SPEED_MEDIUM;												/* Configure the Required Pin to Output */
-        GPIO_init(&loc_PORTstr);																	    /* Sending the Configuration to the Port To Make the Configurations Take Action */
+        GPIO_init(&loc_PORTstr);					
+        GPIO_SetPinValue(KEYPAD_strConfig.KEYPAD_strCOLS[loc_iterator].KEYPAD_enumPORT,KEYPAD_strConfig.KEYPAD_strCOLS[loc_iterator].KEYPAD_enumPin,GPIO_SET_PIN_HIGH);												    /* Sending the Configuration to the Port To Make the Configurations Take Action */
     }
 
     return loc_KEYPADError; /* Return an Error Status from the Function */

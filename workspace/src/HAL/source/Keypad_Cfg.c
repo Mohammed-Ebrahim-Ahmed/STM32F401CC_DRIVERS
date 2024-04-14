@@ -24,33 +24,33 @@ KEYPAD_strConfig_t KEYPAD_strConfig = {
 	.KEYPAD_strROWS = {
 		[ROW0] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin3,
+			.KEYPAD_enumPin = KEYPAD_enumPin8,
 		},
 		[ROW1] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin4,
+			.KEYPAD_enumPin = KEYPAD_enumPin9,
 		},
 		[ROW2] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin5,
+			.KEYPAD_enumPin = KEYPAD_enumPin10,
 		},
 	},
 	.KEYPAD_strCOLS = {
 		[COL0] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin2,
+			.KEYPAD_enumPin = KEYPAD_enumPin5,
 		},
 		[COL1] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin1,
+			.KEYPAD_enumPin = KEYPAD_enumPin6,
 		},
 		[COL2] = {
 			.KEYPAD_enumPORT = GPIO_PORTB,
-			.KEYPAD_enumPin = KEYPAD_enumPin0,
+			.KEYPAD_enumPin = KEYPAD_enumPin7,
 		},
 	},
 	.KEYPAD_enumConnection = KEYPAD_enumPullUp,    /*Connection type (Pull-Up or Pull-Down)*/
-	.KEYPAD_enumLogicType = KEYPAD_enumLogicLow   /*Logic type (High or Low when pressed)*/
+	.KEYPAD_enumLogicType = KEYPAD_enumLogicHigh  /*Logic type (High or Low when pressed)*/
 };
 
 /*Characters assigned to each key on the keypad*/

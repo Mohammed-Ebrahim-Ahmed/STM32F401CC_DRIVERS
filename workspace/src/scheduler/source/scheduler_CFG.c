@@ -7,13 +7,14 @@
 // extern Runnable Runnable_app;
 // extern Runnable Runnable_app;
 // extern Runnable Dummy_runnable;
+extern Runnable Keypad_Runnable;
+extern Runnable readSwitches;
 extern Runnable LCD_TASK;
 extern Runnable DateTime;
 extern Runnable displayControl;
 extern Runnable EditTimeModeSM;
-extern Runnable readSwitches;
 extern Runnable stopWatch;
-extern Runnable Keypad_Runnable;
+
 
 const Runnable_USER_t Runnable_User [_RUNNABLE_NO] =
 {   
