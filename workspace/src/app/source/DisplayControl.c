@@ -70,13 +70,14 @@ extern volatile uint16_t Time[7];
 extern volatile uint16_t Date[5];
 extern volatile uint16_t stopWatchTime[7];
 extern volatile int8_t cursor_pos[2];
-extern volatile uint16_t EditedTime[7];
+extern volatile int16_t EditedTime[7];
 extern volatile uint8_t EditDigit_Flag;
 volatile uint8_t temp1[13];
 volatile uint8_t temp2[11]; 
 volatile uint8_t temp3[13];
 volatile uint8_t temp4[13];
 volatile uint8_t EDIT_DIGIT_FLAG = 1;
+volatile uint8_t NOT_EDIT_DIGIT = 0;
 enum Editstates{
     Edit_Mode,
     Edit_Digit,
@@ -188,6 +189,7 @@ void displayControl (void)
                 LCD_setCursorPosition(1,2, NULL);   
                 DisplayEditedTime();        
                 LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
+                NOT_EDIT_DIGIT = 1;
             }
             else if(Switches_Status & MODE_MASK)
             {
@@ -215,10 +217,11 @@ void displayControl (void)
                 case Edit_Mode:
                     trackCursor();
                     validateCursorPos(cursor_pos[x_pos],cursor_pos[y_pos]);
-                    if((Switches_Status & EDIT_MASK) && validCursorPos)
+                    if((Switches_Status & EDIT_MASK) && validCursorPos && !NOT_EDIT_DIGIT)
                     {
                         Edit_state = Edit_Digit;
                     }
+                    NOT_EDIT_DIGIT = 0;
                     break;
                 case Edit_Digit:
                     EditTime();

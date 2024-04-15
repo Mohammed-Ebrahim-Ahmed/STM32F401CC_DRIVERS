@@ -1338,7 +1338,7 @@ void LCD_setPosProc(void)
                     timer = 0;
                     User_Req[Req_index].state = REQ_STATE_READY;
                     User_Req[Req_index].type = REQ_TYPE_NOREQ;
-                    Pos_Flag = 0;
+                    Pos_Flag = 2;
                     if(User_Req[Req_index].CB)
                     {
                         User_Req[Req_index].CB();

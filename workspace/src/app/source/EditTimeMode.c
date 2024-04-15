@@ -87,7 +87,7 @@ volatile int8_t cursor_pos[2] = {
     [y_pos] = 1,
 };
 
-volatile uint16_t EditedTime[7]={
+volatile int16_t EditedTime[7]={
     [millisecond] = 0,
     [sec1] = 0,
     [sec2] = 0,
@@ -198,6 +198,7 @@ void EditTime (void)
             }
             temp4[0] = EditedTime[hour2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if(Switches_Status & DOWN_MASK)
         {
@@ -208,6 +209,7 @@ void EditTime (void)
             }
             temp4[0] = EditedTime[hour2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else{
             /*Do Nothing*/
@@ -225,6 +227,7 @@ void EditTime (void)
             }
             temp4[1] = EditedTime[hour1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -235,6 +238,7 @@ void EditTime (void)
             }
             temp4[1] = EditedTime[hour1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
     }
     else if (cursor_pos[x_pos] == MINUTES2_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -249,6 +253,7 @@ void EditTime (void)
             }
             temp4[3] = EditedTime[min2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -259,6 +264,7 @@ void EditTime (void)
             }
             temp4[3] = EditedTime[min2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
     }
     else if (cursor_pos[x_pos] == MINUTES1_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -273,6 +279,7 @@ void EditTime (void)
             }
             temp4[4] = EditedTime[min1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -283,6 +290,7 @@ void EditTime (void)
             }
             temp4[4] = EditedTime[min1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
 
     }
@@ -298,6 +306,7 @@ void EditTime (void)
             }
             temp4[6] = EditedTime[sec2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -308,6 +317,7 @@ void EditTime (void)
             }
             temp4[6] = EditedTime[sec2] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
     }
     else if (cursor_pos[x_pos] == SECONDS1_POS_X && cursor_pos[y_pos] == TIME_POS_Y)
@@ -322,6 +332,7 @@ void EditTime (void)
             }
             temp4[7] = EditedTime[sec1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
         else if (Switches_Status & DOWN_MASK)
         {
@@ -332,6 +343,7 @@ void EditTime (void)
             }
             temp4[7] = EditedTime[sec1] + '0';
             LCD_writeReq((uint8_t*)(temp4), 11, 1, 2, NULL);
+            LCD_setCursorPosition(cursor_pos[y_pos],cursor_pos[x_pos], NULL);
         }
     }
     CopyTime((uint16_t *)EditedTime,Time);
